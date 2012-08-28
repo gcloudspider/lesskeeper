@@ -6,6 +6,8 @@ import (
     "net"
     "strconv"
     //"os"
+    //"reflect"
+    "encoding/json"
 )
 
 const MessageSize = 512
@@ -20,6 +22,8 @@ type Kpnet struct {
     in  chan *Packet
     out chan *Packet
 }
+
+type EventHandler func(... interface{})
 
 func NewNet(port int) *Kpnet {
     
@@ -47,16 +51,19 @@ func (kpn *Kpnet) Listen(port int) (err error) {
 
     go kpn.handleReceiving()
     go kpn.handleSending()
+    go kpn.dispatching()
 
     return nil
 }
 
-func (kpn *Kpnet) Send(msg []byte, addr string) {
-    
-    fmt.Println("Send(", string(msg), ")")
+func (kpn *Kpnet) Send(msg interface{}, addr string) {
 
-    kpn.out <- &Packet{addr, msg}
-
+    switch v := msg.(type) {
+    case []byte:
+        kpn.out <- &Packet{addr, v}
+    case string:
+        kpn.out <- &Packet{addr, []byte(v)}
+    }
 }
 
 func (kpn *Kpnet) handleSending() {
@@ -80,7 +87,7 @@ func (kpn *Kpnet) handleSending() {
         if _, err = kpn.sock.WriteTo(p.Msg, addr); err != nil {
             fmt.Println("error: handleSending() ", addr.String(), err)
         } else {
-            fmt.Println("handleSending() OK")
+            //fmt.Println("handleSending() OK")
         }
     }
 }
@@ -128,8 +135,50 @@ func (kpn *Kpnet) dispatching() {
 }
 
 func dispatchEvent(kpn *Kpnet, p *Packet) {
-    fmt.Println("dispatchEvent from: ",p.Addr, " body: ", string(p.Msg))
+    
+    //fmt.Println("dispatchEvent from: ",p.Addr, " body: ", string(p.Msg))
+
+    var f interface{}
+    err := json.Unmarshal(p.Msg, &f)
+    if err != nil {
+        return
+    }
+    
+    req := f.(map[string]interface{})
+    action, ok := req["action"] 
+    if !ok {
+        return
+    }
+
+    switch action.(string) {
+    case "NodeCast":
+        ActionNodeCast(req, p.Addr)
+    case "LedNew":
+        ActionLedNew(req, p.Addr)
+    case "LedNewCb":
+        ActionLedNew(req, p.Addr)
+    case "LedValue":
+        ActionLedNew(req, p.Addr)
+    case "LedCast":
+        ActionLedNew(req, p.Addr)
+    case "ItemPut":
+        ActionLedNew(req, p.Addr)
+    case "ItemPutCb":
+        ActionLedNew(req, p.Addr)
+    case "ItemPutCbClient":
+        ActionLedNew(req, p.Addr)
+    case "LockLease":
+        ActionLedNew(req, p.Addr)
+    case "GroupLease":
+        ActionLedNew(req, p.Addr)
+    case "WatchReg":
+        ActionLedNew(req, p.Addr)
+    case "WatchNotify":
+        ActionLedNew(req, p.Addr)
+    }
+
 }
+
 
 /*
 func (kpn *Kpnet) udpRequest() {
