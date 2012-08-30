@@ -8,6 +8,7 @@ import (
     //"os"
     //"reflect"
     "encoding/json"
+    "strings"
 )
 
 const MessageSize = 512
@@ -63,6 +64,11 @@ func (kpn *Kpnet) Send(msg interface{}, addr string) {
         kpn.out <- &Packet{addr, v}
     case string:
         kpn.out <- &Packet{addr, []byte(v)}
+    case map[string]string:
+        mb, _ := json.Marshal(v)
+        kpn.out <- &Packet{addr, mb}
+        //fmt.Println("Send (type) map")
+    default:
     }
 }
 
@@ -87,7 +93,7 @@ func (kpn *Kpnet) handleSending() {
         if _, err = kpn.sock.WriteTo(p.Msg, addr); err != nil {
             fmt.Println("error: handleSending() ", addr.String(), err)
         } else {
-            //fmt.Println("handleSending() OK")
+            //fmt.Println("handleSending() to", p.Addr)
         }
     }
 }
@@ -120,7 +126,7 @@ func (kpn *Kpnet) handleReceiving() {
         
         kpn.in <- &Packet{addr.String(), msg}
 
-        fmt.Println("Receive(", string(buf[0:n]), ") len(", n, ")")
+        //fmt.Println("Receive(", string(buf[0:n]), ") len(", n, ")")
 
         //daytime := time.Now().String()
         //conn.WriteToUDP([]byte(daytime), addr)
@@ -150,31 +156,36 @@ func dispatchEvent(kpn *Kpnet, p *Packet) {
         return
     }
 
+    fmt.Println("Handling -> ", action.(string), "\n\t", req)
+
+    ip := strings.Split(p.Addr, ":")[0]
+
     switch action.(string) {
     case "NodeCast":
-        ActionNodeCast(req, p.Addr)
+        ActionNodeCast(req, ip)
     case "LedNew":
-        ActionLedNew(req, p.Addr)
+        ActionLedNew(req, ip)
     case "LedNewCb":
-        ActionLedNew(req, p.Addr)
+        ActionLedNewCb(req, ip)
     case "LedValue":
-        ActionLedNew(req, p.Addr)
+        ActionLedValue(req, ip)
     case "LedCast":
-        ActionLedNew(req, p.Addr)
+        ActionLedCast(req, ip)
+
     case "ItemPut":
-        ActionLedNew(req, p.Addr)
+        ActionLedNew(req, ip)
     case "ItemPutCb":
-        ActionLedNew(req, p.Addr)
+        ActionLedNew(req, ip)
     case "ItemPutCbClient":
-        ActionLedNew(req, p.Addr)
+        ActionLedNew(req, ip)
     case "LockLease":
-        ActionLedNew(req, p.Addr)
+        ActionLedNew(req, ip)
     case "GroupLease":
-        ActionLedNew(req, p.Addr)
+        ActionLedNew(req, ip)
     case "WatchReg":
-        ActionLedNew(req, p.Addr)
+        ActionLedNew(req, ip)
     case "WatchNotify":
-        ActionLedNew(req, p.Addr)
+        ActionLedNew(req, ip)
     }
 
 }

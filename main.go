@@ -1,8 +1,30 @@
 package main
 
-import "fmt"
+import (
+    "fmt"
+	"time"
+    //"math"
+) 
+
+var kpd Kpdata
+var kpn *Kpnet
 
 func main() {
-    fmt.Printf("hello, world\n")
-}
+    
+    start := time.Now()
+    
+    kpd.Initialize()
 
+    kpn = NewNet(9528)
+    
+    // go client-cronjob
+    JobTrackerLocal()
+
+    fmt.Println(time.Since(start))
+
+    // go checker
+    for {
+        //udpRequest();
+        time.Sleep(1e9)
+    }
+}
