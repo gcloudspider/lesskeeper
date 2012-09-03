@@ -1,4 +1,4 @@
 #!/bin/bash
 
-go run kpaction.go kpnet.go kpdata.go jtloc.go main.go
+go run kpaction.go kpnet.go kpnethttp.go kpdata.go jtloc.go main.go
 

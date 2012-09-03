@@ -173,11 +173,12 @@ func dispatchEvent(kpn *Kpnet, p *Packet) {
         ActionLedCast(req, ip)
 
     case "ItemPut":
-        ActionLedNew(req, ip)
+        ActionItemPut(req, ip)
     case "ItemPutCb":
-        ActionLedNew(req, ip)
+        ActionItemPutCb(req, ip)
     case "ItemPutCbClient":
-        ActionLedNew(req, ip)
+        ActionItemPutCbClient(req, ip)
+    
     case "LockLease":
         ActionLedNew(req, ip)
     case "GroupLease":
@@ -188,6 +189,7 @@ func dispatchEvent(kpn *Kpnet, p *Packet) {
         ActionLedNew(req, ip)
     }
 
+    return
 }
 
 

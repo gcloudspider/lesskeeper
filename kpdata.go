@@ -44,8 +44,8 @@ func (kpd *Kpdata) Get(key string) (string, error) {
     return kpd.c.Get(key).Str()      
 }
 
-func (kpd *Kpdata) Keys(key string) (map[string]string, error) {
-    return kpd.c.Keys(key).Hash()
+func (kpd *Kpdata) Keys(key string) ([]string, error) {
+    return kpd.c.Keys(key).List()
 }
 
 func (kpd *Kpdata) Del(key string) (bool, error) {
@@ -98,6 +98,14 @@ func (kpd *Kpdata) Incrby(key string, val int) (int, error) {
 
 func (kpd *Kpdata) Expire(key string, val int) error {
     r := kpd.c.Expire(key, val)
+    if r.Err != nil {
+        return r.Err
+    }
+    return nil
+}
+
+func (kpd *Kpdata) Exists(key string) error {
+    r := kpd.c.Exists(key)
     if r.Err != nil {
         return r.Err
     }

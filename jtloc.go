@@ -25,7 +25,6 @@ var (
 
 func JobTrackerLocal() {
 
-    rand.Seed(time.Now().UnixNano())
     var err error
 
     for {
@@ -34,7 +33,6 @@ func JobTrackerLocal() {
             jobTrackerLocalRefresh()
             ref = int(time.Now().Unix())
         }
-        //locNode, _ = loc["node"]
         
         // broadcast self-info
         msg := map[string]string{
@@ -50,8 +48,6 @@ func JobTrackerLocal() {
         } else if rand.Intn(8) == 0 {
             kpn.Send(msg, "255.255.255.255:9528")
         }
-
-        //kpn.Send("TEST", "255.255.255.255:9528")
 
         // Paxos::P1a
         // try to become a leader
@@ -83,8 +79,8 @@ func JobTrackerLocal() {
         }
 
         // Leader Cast
-        if len(kpsLed) > 0 && kpsLed == locNode {
-         
+        if kpsLed != "" && kpsLed == locNode {
+
             n , _ := kpd.Incrby("ct:ltid", 0)
             kpnoi, _ := strconv.Atoi(kpno)
             kpnoi = len(kps) * n + kpnoi - 1
@@ -92,15 +88,12 @@ func JobTrackerLocal() {
             kpsm := []string{}
             
             for k, v := range kpls {
-                //fmt.Println(k, v)
-                //continue;
                 addr, _ := kpd.Hget("ls:"+ v, "addr")
                 if err := kpd.Exists("on:"+ v); err == nil {
                     kpsm = append(kpsm, "1,"+ k +","+ v +",1,"+ addr)
                 } else {
                     kpsm = append(kpsm, "1,"+ k +","+ v +",0,"+ addr)
                 }
-                //kpsm = append(kpsm, k +",2,"+ addr)
             }
 
             msg := map[string]string{
@@ -111,11 +104,10 @@ func JobTrackerLocal() {
             }
 
             kpn.Send(msg, "255.255.255.255:9528")
-            //fmt.Println(n, len(kps), kpno, n)
         }
 
         //fmt.Println("JobTrackerLocal Checking")        
-        time.Sleep(1e9)
+        time.Sleep(2e9)
     }
 }
 

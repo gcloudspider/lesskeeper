@@ -3,7 +3,8 @@ package main
 import (
     "fmt"
 	"time"
-    //"math"
+    "math/rand"
+    "runtime"
 ) 
 
 var kpd Kpdata
@@ -11,6 +12,12 @@ var kpn *Kpnet
 
 func main() {
     
+    fmt.Println("Starting NumCPU:", runtime.NumCPU())
+    
+    runtime.GOMAXPROCS(runtime.NumCPU())
+
+    rand.Seed(time.Now().UnixNano())
+
     start := time.Now()
     
     kpd.Initialize()
@@ -18,7 +25,10 @@ func main() {
     kpn = NewNet(9528)
     
     // go client-cronjob
-    JobTrackerLocal()
+    go JobTrackerLocal()
+
+    // go http servicing
+    kpnhListenAndServe()
 
     fmt.Println(time.Since(start))
 
