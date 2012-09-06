@@ -51,9 +51,19 @@ func kpnhApiItem(w http.ResponseWriter, r *http.Request) {
     }
 
     ips := strings.Split(r.RemoteAddr, ":")
-    fmt.Println(ips)
+    if len(ips) < 2 {
+        return
+    }
+    
     body2 := strings.Split(string(body), "\r\n")
+    if len(body2) < 2 {
+        return
+    }
+
     cmd := strings.Split(body2[0], " ")
+    if len(cmd) < 2 {
+        return
+    }
     if cmd[0] == "put" && (kpsLed == "" || kpsLed != locNode) {
         return
     }
@@ -62,31 +72,33 @@ func kpnhApiItem(w http.ResponseWriter, r *http.Request) {
     if len(key) < 1 || len(key) > 2000 {
         return
     }
-    fmt.Println("key", key)
+    //fmt.Println("key", key)
 
     mat, _ := regexp.MatchString("^([0-9a-zA-Z ._-]{1,64})$", key)
     if !mat {
-        fmt.Println("match failed 1")
+        //fmt.Println("match failed 1")
         return
     }
 
     linum := "0"
     ival := body2[1]
 
-    fmt.Println("val", body2[1])
+    //fmt.Println("val", body2[1])
     if cmd[0] == "put" {
         lset, err2 := kpd.Hgetall("c:def:"+ key)
-        if err2 != nil {
-            lsetn, _ := lset["n"]
-            if lsetn != "" && lsetn != linum  {
-                linum = lsetn
-                return
+        if err2 == nil {
+            
+            if lsetn, ok := lset["n"]; ok {
+                if lsetn != linum {
+                    linum = lsetn
+                }
             }
 
-            lsetv, _ := lset["v"]
-            if lsetv == ival {
-                fmt.Fprint(w, "OK")
-                return
+            if lsetv, ok := lset["v"]; ok {
+                if lsetv == ival {
+                    fmt.Fprint(w, "OK")
+                    return
+                }
             }
         }
     }
@@ -102,9 +114,10 @@ func kpnhApiItem(w http.ResponseWriter, r *http.Request) {
         "ItemContent": ival,
         "ItemNumberNext": strconv.Itoa(kpnoi),
     }
+    //fmt.Println("ITEM PUT SEND", req)
 
     bdy := ips[0] +"\r\n"+ key +"\r\n"+ ival
-    fmt.Println("bdyAAAAAAAAAAAAAAAAAAAAAA:", "qk:"+ key + linum)
+    
     kpd.Setex("qk:"+ key + linum, 3, "0")
     kpd.Setex("qv:"+ key + linum, 3, bdy)
 
