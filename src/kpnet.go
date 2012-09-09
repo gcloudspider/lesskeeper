@@ -156,7 +156,7 @@ func dispatchEvent(kpn *Kpnet, p *Packet) {
         return
     }
 
-    fmt.Println("Handling -> ", action.(string), "\n\t", req)
+    //fmt.Println("Handling -> ", action.(string), "\n\t", req)
 
     ip := strings.Split(p.Addr, ":")[0]
 

@@ -64,6 +64,7 @@ func kpnhApiItem(w http.ResponseWriter, r *http.Request) {
     if len(cmd) < 2 {
         return
     }
+    
     if cmd[0] == "put" && (kpsLed == "" || kpsLed != locNode) {
         return
     }
@@ -106,30 +107,47 @@ func kpnhApiItem(w http.ResponseWriter, r *http.Request) {
     n , _ := kpd.Incrby("ct:ltid", 1)
     kpnoi := len(kps) * n + kpsNum - 1
 
+    kpnos := strconv.Itoa(kpnoi)
+
     req := map[string]string{
         "node": locNode,
         "action": "ItemPut",
         "ItemNumber": linum,
         "ItemKey": key,
         "ItemContent": ival,
-        "ItemNumberNext": strconv.Itoa(kpnoi),
+        "ItemNumberNext": kpnos,
     }
-    //fmt.Println("ITEM PUT SEND", req)
 
     bdy := ips[0] +"\r\n"+ key +"\r\n"+ ival
     
     kpd.Setex("qk:"+ key + linum, 3, "0")
     kpd.Setex("qv:"+ key + linum, 3, bdy)
 
+    cq := ClientWatcher{make(chan int, 1)}
+    kpcw[kpnos] = cq
+    go func() {
+        time.Sleep(3e9)
+        cq.status <- 9
+    }()
+
     kpn.Send(req, "255.255.255.255:9528")
 
-
-    fmt.Fprint(w, "OK")
-
+    select {
+    case st := <- cq.status:
+        //fmt.Println("RET", st)
+        if st == 1 {
+            fmt.Fprint(w, "OK")
+        } else {
+            fmt.Fprint(w, "ER")
+        }
+        delete(kpcw, kpnos)
+    }
+   
     //fmt.Println("http.Method:", r.Method, "From:", r.RemoteAddr, "Len", r.ContentLength, string(body))
 
     return
 }
+
 func kpnhApiItem2(w http.ResponseWriter, r *http.Request) {
     
     fmt.Println("http.Method:", r.Method, "From:", r.RemoteAddr, "Len", r.ContentLength)

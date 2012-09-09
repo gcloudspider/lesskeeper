@@ -137,7 +137,7 @@ func ActionLedNewCb(req ActionRequst, addr string) {
                 "ValueContent": locNode,
             }
             kpn.Send(msg, ls[4] +":9528")
-            //fmt.Println("Value:", k, v, ls)
+            //fmt.Println("Value:", msg)
         }
         kpd.Expire("ct:tid", rand.Intn(3) + 1)
         
@@ -310,11 +310,14 @@ func ActionItemPut(req ActionRequst, addr string) {
             "n": postnum.(string),
             "v": postval.(string),
         }
+        //fmt.Println(it)
         kpd.Hmset("c:def:"+ key.(string), it)
         msg["AcceptNumber"] = postnum.(string)
     } else {
         msg["AcceptNumber"] = prenum.(string)
     }
+    //fmt.Println(req)
+    //fmt.Println(msg)
 
     // Ensure ctl:loctid to Max
     postnumi, _ := strconv.Atoi(postnum.(string));
@@ -358,23 +361,28 @@ func ActionItemPutCb(req ActionRequst, addr string) {
         bdy, _ := kpd.Get("qv:"+ akey.(string) + anum.(string))
         //fmt.Println(bdy)
         bdy2 := strings.Split(bdy, "\r\n")
-        fmt.Println("ItemPutCbClient", bdy2)
+        //fmt.Println("ItemPutCbClient", bdy2)
         
         // TODO isset[3]
         it := map[string]string{
             "n": anum.(string),
             //"v": bdy2[2],
         }
-        fmt.Println(it)
-        fmt.Println("c:def:"+ akey.(string))
+        //fmt.Println(it)
+        //fmt.Println("c:def:"+ akey.(string))
         //return
         _ = kpd.Hmset("c:def:"+ akey.(string), it)
         //return
 
-        if node.(string) != locNode {
+        if node.(string) == locNode {
+            if _, ok := kpcw[anum.(string)]; ok {
+                kpcw[anum.(string)].status <- 1
+            }
+        } else {
             it["k"] = akey.(string)
             it["node"] = locNode
             it["action"] = "ItemPutCbClient"
+            
             kpn.Send(it, bdy2[0] +":9528")
         }
     }
@@ -390,7 +398,6 @@ func ActionItemPutCbClient(req ActionRequst, addr string) {
         return
     }
 
-
     n, _ := req["n"]
     v, _ := req["v"]
     k, _ := req["k"]
@@ -400,8 +407,6 @@ func ActionItemPutCbClient(req ActionRequst, addr string) {
     }
 
     kpd.Hmset("c:def:"+ k.(string), it)
-
-    fmt.Println("ActionItemPutCbClient OK")
 }
 
 

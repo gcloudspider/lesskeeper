@@ -32,6 +32,7 @@ func (kpd *Kpdata) Set(key string, val string) error {
 }
 
 func (kpd *Kpdata) Setex(key string, ttl int, val string) error {
+
     r := kpd.c.Setex(key, ttl, val)
     if r.Err != nil {
         return r.Err

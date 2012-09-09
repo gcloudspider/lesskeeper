@@ -5,10 +5,15 @@ import (
 	"time"
     "math/rand"
     "runtime"
-) 
+)
+
+type ClientWatcher struct {
+    status chan int
+}
 
 var kpd Kpdata
 var kpn *Kpnet
+var kpcw = map[string]ClientWatcher{}
 
 func main() {
     

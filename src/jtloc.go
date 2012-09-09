@@ -87,6 +87,8 @@ func JobTrackerLocal() {
             
             kpsm := []string{}
             
+            //fmt.Println("kpslad", kpsLed, locNode, kpls)
+
             for k, v := range kpls {
                 addr, _ := kpd.Hget("ls:"+ v, "addr")
                 if err := kpd.Exists("on:"+ v); err == nil {
@@ -96,13 +98,15 @@ func JobTrackerLocal() {
                 }
             }
 
+            //fmt.Println(kpsm)
+
             msg := map[string]string{
                 "action": "LedCast",
                 "node": locNode,
                 "ValueNumber": strconv.Itoa(kpnoi),
                 "kpls": strings.Join(kpsm, ";"),
             }
-
+            //fmt.Println(msg)
             kpn.Send(msg, "255.255.255.255:9528")
         }
 
@@ -162,5 +166,6 @@ func jobTrackLocalNodeID(length int) string {
         rs[i] = chars[rand.Intn(len(chars))]
     }
 
+    //fmt.Println(jobTrackLocalNodeID, string(rs))
     return string(rs)
 }
