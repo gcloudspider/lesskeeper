@@ -12,6 +12,7 @@ import (
     "strings"
     "regexp"
     "strconv"
+    "encoding/json"
 )
 
 func kpnhListenAndServe() { 
@@ -20,18 +21,29 @@ func kpnhListenAndServe() {
 
     http.HandleFunc("/", kpnhDefault)
     http.HandleFunc("/h5keeper/api/item", kpnhApiItem)
+    http.HandleFunc("/h5keeper/api/item/", kpnhApiItem)
     http.HandleFunc("/h5keeper/api/item2", kpnhApiItem2)
 
     s := &http.Server{
         Addr:           ":9529",
-        ReadTimeout:    30 * time.Second,
-        WriteTimeout:   30 * time.Second,
-        //MaxHeaderBytes: 1 << 20,
+        ReadTimeout:    10 * time.Second,
+        WriteTimeout:   10 * time.Second,
+        MaxHeaderBytes: 1 << 20,
     }
-
+    //go kpnMonitoring()
+    
     s.ListenAndServe()
+
+    fmt.Println("http down")
 }
 
+
+func kpnMonitoring() {
+    for {
+        time.Sleep(1e9)
+        fmt.Println("ClientWatcher", len(kpcw))
+    }
+}
 
 func kpnhDefault(w http.ResponseWriter, r *http.Request) {
     fmt.Fprint(w, "Hello, world")
@@ -42,8 +54,17 @@ func kpnhApiItem(w http.ResponseWriter, r *http.Request) {
     //buf := new(bytes.Buffer)
     //io.Copy(buf, r.Body)
     //body := buf.String()
+    //fmt.Println("TEST")
 
-    defer r.Body.Close()
+    defer func() {
+        r.Body.Close()
+    }()
+
+    //w.WriteHeader(200)
+    //w.Header().Add("Connection", "close")
+    //w.Write([]byte("OK"))
+    //fmt.Fprint(w, "OK")
+    //return
 
     body, err := ioutil.ReadAll(r.Body)
     if err != nil {
@@ -85,8 +106,9 @@ func kpnhApiItem(w http.ResponseWriter, r *http.Request) {
     ival := body2[1]
 
     //fmt.Println("val", body2[1])
+    lset, err2 := kpd.Hgetall("c:def:"+ key)
     if cmd[0] == "put" {
-        lset, err2 := kpd.Hgetall("c:def:"+ key)
+        
         if err2 == nil {
             
             if lsetn, ok := lset["n"]; ok {
@@ -102,9 +124,37 @@ func kpnhApiItem(w http.ResponseWriter, r *http.Request) {
                 }
             }
         }
+
+    } else if cmd[0] == "get" {
+
+        if err2 != nil {
+            fmt.Fprint(w, "ER")
+        }
+
+        msg := map[string]string{
+            "node": locNode,
+        }
+
+        if lsetn, ok := lset["n"]; ok {
+            msg["n"] = lsetn
+            
+        }
+        if lsetv, ok := lset["v"]; ok {
+            msg["v"] = lsetv
+        }
+
+        //fmt.Println("Send JSON")
+        mb, _ := json.Marshal(msg)
+        fmt.Fprint(w, string(mb))
+        
+        return
+    } else {
+        fmt.Println("CURRENT")
+        fmt.Fprint(w, "ER")
+        return
     }
 
-    n , _ := kpd.Incrby("ct:ltid", 1)
+    n , _ := kpd.Incrby("ctl:ltid", 1)
     kpnoi := len(kps) * n + kpsNum - 1
 
     kpnos := strconv.Itoa(kpnoi)
@@ -123,17 +173,18 @@ func kpnhApiItem(w http.ResponseWriter, r *http.Request) {
     kpd.Setex("qk:"+ key + linum, 3, "0")
     kpd.Setex("qv:"+ key + linum, 3, bdy)
 
-    cq := ClientWatcher{make(chan int, 1)}
-    kpcw[kpnos] = cq
+    
+    /* kpcw[kpnos] = ClientWatcher{make(chan int, 2)}
     go func() {
         time.Sleep(3e9)
-        cq.status <- 9
-    }()
+        kpcw[kpnos].status <- 9
+        //delete(kpcw, kpnos)
+    }() */
 
     kpn.Send(req, "255.255.255.255:9528")
 
-    select {
-    case st := <- cq.status:
+    /* select {
+    case st := <- kpcw[kpnos].status:
         //fmt.Println("RET", st)
         if st == 1 {
             fmt.Fprint(w, "OK")
@@ -141,7 +192,9 @@ func kpnhApiItem(w http.ResponseWriter, r *http.Request) {
             fmt.Fprint(w, "ER")
         }
         delete(kpcw, kpnos)
-    }
+    }*/
+
+    fmt.Fprint(w, "OK")
    
     //fmt.Println("http.Method:", r.Method, "From:", r.RemoteAddr, "Len", r.ContentLength, string(body))
 

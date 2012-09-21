@@ -19,6 +19,7 @@ var (
     kpls    = map[string]string{}
     req     = map[string]string{}
     locNode = ""
+    locNodeAddr = ""
     kpsNum  = 0
     kpsLed  = ""
 )
@@ -40,7 +41,7 @@ func JobTrackerLocal() {
             "node": locNode,
         }
         
-        kpsLed, err = kpd.Get("ct:led")
+        kpsLed, err = kpd.Get("ctl:led")
         if err == nil && kpsLed != "" {
             if addr, err := kpd.Hget("ls:"+ kpsLed, "addr"); err != nil {
                 kpn.Send(msg, addr +":9528")
@@ -60,13 +61,13 @@ func JobTrackerLocal() {
             fmt.Println("try to become new leader")
             
             // Paxos::P2c
-            if tid, _ := kpd.Get("ct:tid"); len(tid) == 0 {
-                n, _ := kpd.Incrby("ct:ltid", 1)
+            if tid, _ := kpd.Get("ctl:tid"); len(tid) == 0 {
+                n, _ := kpd.Incrby("ctl:ltid", 1)
                 //kpnoi, _ := strconv.Atoi(kpno)
                 kpnoi := len(kps) * n + kpsNum - 1
 
                 // One Proposal alive in rand seconds
-                kpd.Setex("ct:tid", 3, strconv.Itoa(kpnoi))
+                kpd.Setex("ctl:tid", 3, strconv.Itoa(kpnoi))
                 msg = map[string]string{
                     "action": "LedNew",
                     "node": locNode,
@@ -81,7 +82,7 @@ func JobTrackerLocal() {
         // Leader Cast
         if kpsLed != "" && kpsLed == locNode {
 
-            n , _ := kpd.Incrby("ct:ltid", 0)
+            n , _ := kpd.Incrby("ctl:ltid", 0)
             kpnoi, _ := strconv.Atoi(kpno)
             kpnoi = len(kps) * n + kpnoi - 1
             
@@ -117,19 +118,19 @@ func JobTrackerLocal() {
 
 func jobTrackerLocalRefresh() {
 
-    loc, _ = kpd.Hgetall("ct:loc")
+    loc, _ = kpd.Hgetall("ctl:loc")
 
     // if new node then ID setting 
     if _, ok := loc["node"]; !ok {
-        loc["node"] = jobTrackLocalNodeID(8)
-        kpd.Hset("ct:loc", "node", loc["node"])
+        loc["node"] = NewRandString(10)
+        kpd.Hset("ctl:loc", "node", loc["node"])
     }
     locNode, _ = loc["node"]
 
     // Lesse time setting of Keeper's leader
     if _, ok := loc["tick"]; !ok {
         loc["tick"] = "2000"
-        kpd.Hset("ct:loc", "tick", loc["tick"])
+        kpd.Hset("ctl:loc", "tick", loc["tick"])
     }
 
     // Fetch local ip address
@@ -140,12 +141,13 @@ func jobTrackerLocalRefresh() {
     ec.Stdout = &out
     if err := ec.Run(); err == nil {
         loc["addr"] = strings.TrimSpace(out.String())
-        kpd.Hset("ct:loc", "addr", loc["addr"])
-        kpd.Hset("ct:loc", "port", "9528")
+        kpd.Hset("ctl:loc", "addr", loc["addr"])
+        kpd.Hset("ctl:loc", "port", "9528")
     }
 
     req["node"] = loc["node"]
     req["addr"] = loc["addr"]
+    locNodeAddr = loc["addr"]
 
     kpls, _ = kpd.Hgetall("kps")
     for k, v := range kpls {

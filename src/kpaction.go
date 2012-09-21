@@ -49,24 +49,24 @@ func ActionLedNew(req ActionRequst, addr string) {
     pval, _ := req["ProposalContent"]
     pvals := pval.(string)
 
-    vnum, _ := kpd.Get("ct:voteid")
+    vnum, _ := kpd.Get("ctl:voteid")
     vnumi, _ := strconv.Atoi(vnum)
-    vval, _ := kpd.Get("ct:voteval")
+    vval, _ := kpd.Get("ctl:voteval")
     // ACCEPT!
     if vnumi == 0 || vval == "" || vnumi == pnumi || (vval == "" && vnumi <= pnumi) {
         vnumi = pnumi
         vval = pvals
 
-        kpd.Set("ct:voteid", strconv.Itoa(vnumi))
-        kpd.Setex("ct:voteval", 2, vval)
+        kpd.Set("ctl:voteid", strconv.Itoa(vnumi))
+        kpd.Setex("ctl:voteval", 2, vval)
     }
 
     //
     rno := pnumi / len(kps)
-    lno, _ := kpd.Incrby("ct:ltid", 0)
+    lno, _ := kpd.Incrby("ctl:ltid", 0)
     //lnoi, _ := strconv.Atoi(lno)
     if lno < rno && node.(string) != locNode {
-        kpd.Incrby("ct:ltid", (rno - lno))
+        kpd.Incrby("ctl:ltid", (rno - lno))
     }
 
     msg := map[string]string{
@@ -95,13 +95,13 @@ func ActionLedNewCb(req ActionRequst, addr string) {
 
     aval, _ := req["AcceptContent"]
 
-    lno, _ := kpd.Incrby("ct:ltid", 0)
+    lno, _ := kpd.Incrby("ctl:ltid", 0)
     rno := anumi / len(kps)
     if lno < rno && node.(string) != locNode {
-        kpd.Incrby("ct:ltid", (rno - lno))
+        kpd.Incrby("ctl:ltid", (rno - lno))
     }
 
-    tid, _ := kpd.Get("ct:tid")
+    tid, _ := kpd.Get("ctl:tid")
     tidi, _ := strconv.Atoi(tid)
     if tidi == 0 {
         return
@@ -111,7 +111,7 @@ func ActionLedNewCb(req ActionRequst, addr string) {
     if tidi == anumi && locNode == aval.(string) {
         prok = "px:value:"
     } else if locNode != aval.(string) {
-        kpd.Expire("ct:tid", rand.Intn(3) + 1)
+        kpd.Expire("ctl:tid", rand.Intn(3) + 1)
     } else {
         prok = "px:unvalue:"
     }
@@ -121,7 +121,7 @@ func ActionLedNewCb(req ActionRequst, addr string) {
 
     fmt.Println("Checking if valued:", prok)
 
-    vs2, _ := kpd.Keys("ct:*")
+    vs2, _ := kpd.Keys("ctl:*")
     fmt.Println(vs2)
 
     // Valued
@@ -139,7 +139,7 @@ func ActionLedNewCb(req ActionRequst, addr string) {
             kpn.Send(msg, ls[4] +":9528")
             //fmt.Println("Value:", msg)
         }
-        kpd.Expire("ct:tid", rand.Intn(3) + 1)
+        kpd.Expire("ctl:tid", rand.Intn(3) + 1)
         
         fmt.Println("Majory Valued")
         return;
@@ -150,12 +150,12 @@ func ActionLedNewCb(req ActionRequst, addr string) {
     //fmt.Println(vs)
     if 2 * len(vs) > len(kps) {
         // Prepare?
-        lno, _ = kpd.Incrby("ct:ltid", 0)
+        lno, _ = kpd.Incrby("ctl:ltid", 0)
         gno := len(kps) * lno + kpsNum - 1
         if gno > tidi {
-            lno, _ = kpd.Incrby("ct:ltid", 1)
+            lno, _ = kpd.Incrby("ctl:ltid", 1)
             gno = len(kps) * lno + kpsNum - 1
-            kpd.Setex("ct:tid", rand.Intn(3) + 1, strconv.Itoa(gno))
+            kpd.Setex("ctl:tid", rand.Intn(3) + 1, strconv.Itoa(gno))
 
             msg := map[string]string{
                 "action": "LedNew",
@@ -165,7 +165,7 @@ func ActionLedNewCb(req ActionRequst, addr string) {
             }
             kpn.Send(msg, "255.255.255.255:9528")
         } else {
-            kpd.Expire("ct:tid", rand.Intn(3) + 1)
+            kpd.Expire("ctl:tid", rand.Intn(3) + 1)
         }
 
         fmt.Println("Majory UnValued")
@@ -191,15 +191,15 @@ func ActionLedValue(req ActionRequst, addr string) {
         return
     }
 
-    anum, _ := kpd.Get("ct:voteid")
+    anum, _ := kpd.Get("ctl:voteid")
     anumi, _ := strconv.Atoi(anum)
-    aval, _ := kpd.Get("ct:voteval")
+    aval, _ := kpd.Get("ctl:voteval")
     if anumi == 0 {
         return 
     }
 
     if anumi == valnumi && valnode.(string) == aval {
-        kpd.Setex("ct:led", 12, aval)
+        kpd.Setex("ctl:led", 12, aval)
     }
 
     fmt.Println("Value OK", anum, aval)
@@ -217,11 +217,11 @@ func ActionLedCast(req ActionRequst, addr string) {
     }
 
     if kpsLed != "" && kpsLed != node.(string) {
-        kpd.Del("ct:led")
+        kpd.Del("ctl:led")
         return
     }
 
-    kpd.Setex("ct:led", 12, node.(string))
+    kpd.Setex("ctl:led", 12, node.(string))
 
     if node.(string) == locNode {
         // TODO
@@ -229,12 +229,12 @@ func ActionLedCast(req ActionRequst, addr string) {
     }
 
     ///
-    ltid, _ := kpd.Incrby("ct:ltid", 0)
+    ltid, _ := kpd.Incrby("ctl:ltid", 0)
     vnum, _ := req["ValueNumber"]
     vnumi, _ := strconv.Atoi(vnum.(string))
     rtid := vnumi / len(kpls)
     if ltid < rtid && node.(string) != locNode {
-        kpd.Incrby("ct:ltid", rtid - ltid)
+        kpd.Incrby("ctl:ltid", rtid - ltid)
     }
 
     //
@@ -322,9 +322,9 @@ func ActionItemPut(req ActionRequst, addr string) {
     // Ensure ctl:loctid to Max
     postnumi, _ := strconv.Atoi(postnum.(string));
     nnum := postnumi / len(kpls)
-    ltid, _ := kpd.Incrby("ct:ltid", 0)
+    ltid, _ := kpd.Incrby("ctl:ltid", 0)
     if ltid < nnum && locNode != node.(string) {
-        kpd.Incrby("ct:ltid", nnum - ltid)
+        kpd.Incrby("ctl:ltid", nnum - ltid)
     }
 
     kpn.Send(msg, addr +":9528")
@@ -342,10 +342,10 @@ func ActionItemPutCb(req ActionRequst, addr string) {
     node, _ := req["node"]
     anum, _ := req["AcceptNumber"]
     anumi, _ := strconv.Atoi(anum.(string))
-    ltid, _ := kpd.Incrby("ct:ltid", 0)
+    ltid, _ := kpd.Incrby("ctl:ltid", 0)
     rnum := anumi / len(kpls)
     if ltid < rnum && node.(string) != locNode {
-        kpd.Incrby("ct:ltid", rnum - ltid)
+        kpd.Incrby("ctl:ltid", rnum - ltid)
     }
 
     akey, _ := req["AcceptKey"]
@@ -360,13 +360,15 @@ func ActionItemPutCb(req ActionRequst, addr string) {
         //fmt.Println("QQQQQQQQQQQQQQQQQQ", "qv:"+ akey.(string) + anum.(string))
         bdy, _ := kpd.Get("qv:"+ akey.(string) + anum.(string))
         //fmt.Println(bdy)
-        bdy2 := strings.Split(bdy, "\r\n")
+        bdy2 := strings.SplitN(bdy, "#", 4)
         //fmt.Println("ItemPutCbClient", bdy2)
-        
-        // TODO isset[3]
+        if len(bdy2) < 4 {
+            return // error handler
+        }
+
         it := map[string]string{
             "n": anum.(string),
-            //"v": bdy2[2],
+            "v": bdy2[3], // TODO
         }
         //fmt.Println(it)
         //fmt.Println("c:def:"+ akey.(string))
@@ -381,19 +383,29 @@ func ActionItemPutCb(req ActionRequst, addr string) {
         } else {
             it["k"] = akey.(string)
             it["node"] = locNode
-            it["action"] = "ItemPutCbClient"
+            it["action"] = "AgentItemPutCb"
+            it["Tag"] = bdy2[1]
             
             kpn.Send(it, bdy2[0] +":9528")
         }
     }
 }
 
-func ActionItemPutCbClient(req ActionRequst, addr string) {
+func ActionAgentItemPutCb(req ActionRequst, addr string) {
     if !req.isset("node") || !req.isset("n") || !req.isset("v") || !req.isset("k") {
         return
     }
 
     node, _ := req["node"]
+
+    if tag, ok := req["Tag"]; ok {
+        agn.Lock.Lock()
+        if c, ok := clients[tag.(string)]; ok {
+            c.Callback <- 1
+        }
+        agn.Lock.Unlock()
+    }
+
     if node.(string) == locNode {
         return
     }

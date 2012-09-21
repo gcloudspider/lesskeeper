@@ -13,11 +13,12 @@ type ClientWatcher struct {
 
 var kpd Kpdata
 var kpn *Kpnet
+var agn *Agent
 var kpcw = map[string]ClientWatcher{}
 
 func main() {
     
-    fmt.Println("Starting NumCPU:", runtime.NumCPU())
+    fmt.Println("ENV NumCPU:", runtime.NumCPU())
     
     runtime.GOMAXPROCS(runtime.NumCPU())
 
@@ -25,7 +26,13 @@ func main() {
 
     start := time.Now()
     
+    NewServer(9531)
+
+    agn = NewAgent(9530)
+
     kpd.Initialize()
+
+    //time.Sleep(1800e9)
 
     kpn = NewNet(9528)
     
@@ -33,13 +40,14 @@ func main() {
     go JobTrackerLocal()
 
     // go http servicing
-    kpnhListenAndServe()
+    go kpnhListenAndServe()
 
-    fmt.Println(time.Since(start))
+    fmt.Println("Started in", time.Since(start))
 
     // go checker
     for {
         //udpRequest();
-        time.Sleep(1e9)
+        time.Sleep(3e9)
+        //runtime.GC()
     }
 }

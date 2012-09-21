@@ -30,8 +30,8 @@ func NewNet(port int) *Kpnet {
     
     kpn := new(Kpnet)
     
-    kpn.in  = make(chan *Packet, 10000)
-    kpn.out = make(chan *Packet, 10000)
+    kpn.in  = make(chan *Packet, 100000)
+    kpn.out = make(chan *Packet, 100000)
 
     kpn.Listen(port)
     
@@ -99,22 +99,8 @@ func (kpn *Kpnet) handleSending() {
 }
 
 func (kpn *Kpnet) handleReceiving() {
-    
-    //fmt.Println("enter handleReceiving()")
-
-    /* udpAddr, err := net.ResolveUDPAddr("ip4", ":9528")
-    if err != nil {
-        fmt.Println("Err, ResolveUDPAddr, %s", err)
-        os.Exit(1)
-    }
-    conn, err := net.ListenUDP("udp", udpAddr)
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "Fatal error ", err.Error())
-        os.Exit(1)
-    }*/
 
     for {
-
         var buf [MessageSize]byte
         n, addr, err := kpn.sock.ReadFromUDP(buf[0:])
         if err != nil {
@@ -125,12 +111,6 @@ func (kpn *Kpnet) handleReceiving() {
         copy(msg, buf[0:n])
         
         kpn.in <- &Packet{addr.String(), msg}
-
-        //fmt.Println("Receive(", string(buf[0:n]), ") len(", n, ")")
-
-        //daytime := time.Now().String()
-        //conn.WriteToUDP([]byte(daytime), addr)
-        //fmt.Println("sever out: ", daytime)
     }
 }
 
@@ -141,8 +121,6 @@ func (kpn *Kpnet) dispatching() {
 }
 
 func dispatchEvent(kpn *Kpnet, p *Packet) {
-    
-    //fmt.Println("dispatchEvent from: ",p.Addr, " body: ", string(p.Msg))
 
     var f interface{}
     err := json.Unmarshal(p.Msg, &f)
@@ -176,8 +154,8 @@ func dispatchEvent(kpn *Kpnet, p *Packet) {
         ActionItemPut(req, ip)
     case "ItemPutCb":
         ActionItemPutCb(req, ip)
-    case "ItemPutCbClient":
-        ActionItemPutCbClient(req, ip)
+    case "AgentItemPutCb":
+        ActionAgentItemPutCb(req, ip)
     
     case "LockLease":
         ActionLedNew(req, ip)
