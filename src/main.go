@@ -14,7 +14,7 @@ type ClientWatcher struct {
 var kpd Kpdata
 var kpn *Kpnet
 var agn *Agent
-var kpcw = map[string]ClientWatcher{}
+//var kpcw = map[string]ClientWatcher{}
 
 func main() {
     
@@ -40,7 +40,7 @@ func main() {
     go JobTrackerLocal()
 
     // go http servicing
-    go kpnhListenAndServe()
+    // go kpnhListenAndServe()
 
     fmt.Println("Started in", time.Since(start))
 

@@ -316,8 +316,6 @@ func ActionItemPut(req ActionRequst, addr string) {
     } else {
         msg["AcceptNumber"] = prenum.(string)
     }
-    //fmt.Println(req)
-    //fmt.Println(msg)
 
     // Ensure ctl:loctid to Max
     postnumi, _ := strconv.Atoi(postnum.(string));
@@ -331,6 +329,7 @@ func ActionItemPut(req ActionRequst, addr string) {
 }
 
 func ActionItemPutCb(req ActionRequst, addr string) {
+
     if !req.isset("node") || !req.isset("ctlid") || !req.isset("AcceptNumber") || !req.isset("AcceptKey") {
         return
     }
@@ -370,41 +369,48 @@ func ActionItemPutCb(req ActionRequst, addr string) {
             "n": anum.(string),
             "v": bdy2[3], // TODO
         }
+
         //fmt.Println(it)
         //fmt.Println("c:def:"+ akey.(string))
         //return
         _ = kpd.Hmset("c:def:"+ akey.(string), it)
         //return
 
-        if node.(string) == locNode {
-            if _, ok := kpcw[anum.(string)]; ok {
-                kpcw[anum.(string)].status <- 1
-            }
-        } else {
-            it["k"] = akey.(string)
-            it["node"] = locNode
+        //if node.(string) == locNode {
+        //    if _, ok := kpcw[anum.(string)]; ok {
+        //        kpcw[anum.(string)].status <- 1
+        //    }
+        //} else {
+            //it["k"] = akey.(string)
+            //it["node"] = locNode
             it["action"] = "AgentItemPutCb"
             it["Tag"] = bdy2[1]
-            
+            it["status"] = "1"
+
             kpn.Send(it, bdy2[0] +":9528")
-        }
+        //}
     }
 }
 
 func ActionAgentItemPutCb(req ActionRequst, addr string) {
-    if !req.isset("node") || !req.isset("n") || !req.isset("v") || !req.isset("k") {
+    /* if !req.isset("n") || !req.isset("k") {
         return
-    }
-
-    node, _ := req["node"]
+    } */
 
     if tag, ok := req["Tag"]; ok {
-        agn.Lock.Lock()
-        if c, ok := clients[tag.(string)]; ok {
-            c.Callback <- 1
+        if rs, ok := req["status"]; ok {
+            if status, err := strconv.Atoi(rs.(string)); err == nil {
+                agn.Lock.Lock()
+                if c, ok := clients[tag.(string)]; ok {
+                    c.Callback <- status
+                }
+                agn.Lock.Unlock()
+            }
         }
-        agn.Lock.Unlock()
     }
+
+    /*
+    node, _ := req["node"]
 
     if node.(string) == locNode {
         return
@@ -419,8 +425,8 @@ func ActionAgentItemPutCb(req ActionRequst, addr string) {
     }
 
     kpd.Hmset("c:def:"+ k.(string), it)
+    */
 }
-
 
 func (req ActionRequst) isset(key string) bool {    
     if _, ok := req[key]; ok {

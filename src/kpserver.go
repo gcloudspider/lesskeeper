@@ -8,6 +8,7 @@ import (
     "sync"
     "strconv"
     "regexp"
+    //"errors"
 )
 
 var lock sync.Mutex
@@ -45,7 +46,7 @@ func (cmd *Command) Process(args *AgentCommand, reply *AgentReply) error {
     switch string(args.Argv[0]) {
     case "GET":
         cmd.CmdGet(args.Argv, reply)
-    case "PUT":
+    case "PUT", "SET":
         cmd.CmdPut(args, reply)
     }
 
@@ -65,7 +66,6 @@ func (cmd *Command) CmdGet(argv map[int][]byte, reply *AgentReply) {
     }
 
     key := string(argv[1])
-
     if ok, _ := regexp.MatchString("^([0-9a-zA-Z ._-]{1,64})$", key); !ok {
         return
     }
@@ -73,7 +73,8 @@ func (cmd *Command) CmdGet(argv map[int][]byte, reply *AgentReply) {
     item, _ := kpd.Hgetall("c:def:"+ key)
 
     if val, ok := item["v"]; ok {
-        reply.Val = val
+        reply.Val  = val
+        reply.Type = ReplyString
     }
 
     if val, ok := item["n"]; ok {
@@ -84,15 +85,21 @@ func (cmd *Command) CmdGet(argv map[int][]byte, reply *AgentReply) {
 }
 
 func (cmd *Command) CmdPut(args *AgentCommand, reply *AgentReply) {
-    
+
+    fmt.Println("CmdPut IN")
+
     if len(args.Argv) < 3 {
+        //reply.Err = errors.New("400")
         return
     }
 
     key := string(args.Argv[1])
     if ok, _ := regexp.MatchString("^([0-9a-zA-Z ._-]{1,64})$", key); !ok {
+        //reply.Err = errors.New("400")
         return
     }
+
+    fmt.Println("CmdPut S1")
 
     num := "0"
     item, err := kpd.Hgetall("c:def:"+ key)
@@ -106,11 +113,31 @@ func (cmd *Command) CmdPut(args *AgentCommand, reply *AgentReply) {
 
         if val, ok := item["v"]; ok {
             if val == string(args.Argv[2]) {
-                reply.Val = "+OK"
+                it := map[string]string{
+                    "action": "AgentItemPutCb",
+                    "Tag":  args.Tag,
+                    "status": "1",
+                }
+                kpn.Send(it, args.Addr +":9528")
+                //reply.Err = errors.New("400")
                 return
             }
         }
     }
+    fmt.Println("CmdPut S2")
+
+        /* it := map[string]string{
+            "n": anum.(string),
+            "v": bdy2[3], // TODO
+        }
+        
+            it["k"] = akey.(string)
+            it["node"] = locNode
+            it["action"] = "AgentItemPutCb"
+            it["Tag"] = bdy2[1]
+            
+            kpn.Send(it, args.Addr +":9528")
+        */
 
     n , _ := kpd.Incrby("ctl:ltid", 1)
     kpnoi := len(kps) * n + kpsNum - 1
@@ -127,13 +154,10 @@ func (cmd *Command) CmdPut(args *AgentCommand, reply *AgentReply) {
     }
 
     bdy := args.Addr +"#"+ args.Tag +"#"+ key +"#"+ string(args.Argv[2])
+    fmt.Println("qv:", bdy)
     
-    kpd.Setex("qk:"+ key + num, 3, "0")
-    kpd.Setex("qv:"+ key + num, 3, bdy)
+    kpd.Setex("qk:"+ key + num, 4, "0")
+    kpd.Setex("qv:"+ key + num, 4, bdy)
     
     kpn.Send(req, "255.255.255.255:9528")
-
-    reply.Val = "+OK"
-
-    return
 }

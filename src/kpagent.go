@@ -16,14 +16,19 @@ import (
 )
 
 const MAX_QUERYBUF_LEN = 1024 * 1024    // 1GB max query buffer
-const IOBUF_LEN = 8
+const IOBUF_LEN        = 8
 const INLINE_MAX_SIZE  = 1024 * 64      // Max size of inline reads
+
+const (
+    CmdSync     uint8 = 0
+    CmdAsync    uint8 = 1
+)
 
 type AgentCommand struct {
     Tag string
     Argv map[int][]byte
     Addr string
-    Type int
+    Type uint8
 }
 
 type Agent struct {
@@ -31,10 +36,10 @@ type Agent struct {
     in  chan *AgentCommand
     out chan *AgentCommand
 
-    flags int
-    stat_numconnections int
-    maxclients int
-    maxidletime int
+    //flags int
+    //stat_numconnections int
+    //maxclients int
+    //maxidletime int
 
     Lock sync.Mutex
 }
@@ -48,23 +53,22 @@ type AgentClient struct {
 
 var clients = map[string]*AgentClient{}
 
-type ReplyType uint8
 const (
-    ReplyStatus ReplyType = iota
-    ReplyError
-    ReplyInteger
-    ReplyNil
-    ReplyString
-    ReplyMulti
+    ReplyStatus     uint8 = 1
+    ReplyError      uint8 = 2
+    ReplyInteger    uint8 = 3
+    ReplyNil        uint8 = 4
+    ReplyString     uint8 = 5
+    ReplyMulti      uint8 = 6
 )
 
 // Reply holds a Command reply.
 type AgentReply struct {
-    Type    ReplyType     // Reply type
-    Elems   []*AgentReply // Sub-replies
-    Err     error         // Reply error
+    Type    uint8         // Reply type
     Val     string
     Ver     uint64
+    Elems   []*AgentReply // Sub-replies
+    Err     error         // Reply error
 }
 
 // Str returns the reply value as a string or
@@ -86,8 +90,8 @@ func NewAgent(port int) *Agent {
     fmt.Println("Getting NewAgent")
     
     agn := new(Agent)
-    agn.flags = 0
-    agn.stat_numconnections = 0
+    //agn.flags = 0
+    //agn.stat_numconnections = 0
 
     agn.in  = make(chan *AgentCommand, 100)
     agn.out = make(chan *AgentCommand, 100)
@@ -130,43 +134,33 @@ func (agn *Agent) handleSending() {
         os.Exit(0)
     }
 
-    for p := range agn.out {
+    for cmd := range agn.out {
 
-        if p == nil {
+        if cmd == nil {
             continue
         }
         
-        if p.Tag == "" {
+        if cmd.Tag == "" {
             continue
         }
 
         reply := new(AgentReply)
-        //reply.Stat = map[string]string{}
-        rs := client.Go("Command.Process", p, &reply, nil)
+        rs := client.Go("Command.Process", cmd, &reply, nil)
         //go func() {
         //    time.Sleep(30e9)
         //    status[p.Tag] <- 9
         //}()
         go func() {
-            
-            if p.Type == 1 {
 
-                time.Sleep(12e9)
-
-                agn.Lock.Lock()
-                if c, ok := clients[p.Tag]; ok {
-                    c.Reply = reply
-                    c.Callback <- 9
-                }
-                agn.Lock.Unlock()
-            
+            // Asynchronous callback
+            if cmd.Type == CmdAsync {
                 return
             }
 
+            // Synchronous Reply
             <- rs.Done
-
             agn.Lock.Lock()
-            if c, ok := clients[p.Tag]; ok {
+            if c, ok := clients[cmd.Tag]; ok {
                 c.Reply = reply
                 c.Callback <- 1
             }
@@ -178,6 +172,10 @@ func (agn *Agent) handleSending() {
 func (agn *Agent) agnNetHandle(conn net.Conn) {
 
     tag := NewRandString(16)
+    
+    client := new(AgentClient)
+    client.Callback = make(chan int, 1)
+    clients[tag] = client
 
     defer func() {
         conn.Close()
@@ -187,7 +185,7 @@ func (agn *Agent) agnNetHandle(conn net.Conn) {
         agn.Lock.Unlock()
     }()
 
-    //conn.SetReadTimeout(1e8)
+    //conn.SetReadTimeout(1e8)    
 
     qbuf := []byte{}
 
@@ -196,13 +194,13 @@ func (agn *Agent) agnNetHandle(conn net.Conn) {
 
     pos := 0
 
-    argc := 0
-    argv := map[int][]byte{}
+    //argc := 0
+    //cmd.Argv := map[int][]byte{}
     
-    client := new(AgentClient)
-    client.Callback = make(chan int, 1)
-
-    clients[tag] = client
+    cmd := new(AgentCommand)
+    cmd.Addr = locNodeAddr
+    cmd.Tag = tag
+    //cmd.Argv = map[int][]byte{}
 
     for {
 
@@ -256,8 +254,10 @@ func (agn *Agent) agnNetHandle(conn net.Conn) {
             multiBulkLen = mblen
             pos = len(li[0]) + 2
 
-            argc = 0
-            argv = map[int][]byte{}
+            //argc = 0
+            cmd.Argv = map[int][]byte{}
+            cmd.Type = CmdSync
+            client.Reply = new(AgentReply)
         }
 
         for {
@@ -268,7 +268,7 @@ func (agn *Agent) agnNetHandle(conn net.Conn) {
                 if len(li) == 1 {
                     if len(li[0]) > INLINE_MAX_SIZE {
                         // "Protocol error: too big bulk count string"
-                        _, _ = conn.Write([]byte("-ERROR"))
+                        _, _ = conn.Write([]byte("-ERR\r\n"))
                     }
                     break // TODO
                 }
@@ -297,8 +297,8 @@ func (agn *Agent) agnNetHandle(conn net.Conn) {
                 break
             } else {
                 
-                argv[argc] = qbuf[pos:pos+bulkLen]
-                argc++
+                cmd.Argv[len(cmd.Argv)] = qbuf[pos:pos+bulkLen]
+                //argc++
 
                 pos += bulkLen + 2
                 bulkLen = -1
@@ -306,35 +306,56 @@ func (agn *Agent) agnNetHandle(conn net.Conn) {
             }
 
             if multiBulkLen <= 0 {
-                //fmt.Println("multi bulk len END", len(argv))
+                //fmt.Println("multi bulk len END", len(cmd.Argv))
                 break
             }
         }
 
         // ProcessCommand()
-        if multiBulkLen == 0 && argc > 0 {
+        if multiBulkLen == 0 && len(cmd.Argv) > 0 {
 
             qbuf = qbuf[pos:n]
 
-            //fmt.Println("DONE Buffer", pos, len(qbuf), string(qbuf[0:pos]), string(qbuf[pos:]))
-            agn.out <- &AgentCommand{Tag: tag, Argv: argv, Addr: locNodeAddr}
+            //fmt.Println("Agent DONE Buffer", tag, pos, len(qbuf), string(qbuf[0:pos]), string(qbuf[pos:]))
+            switch string(cmd.Argv[0]) {
+            case "PUT", "SET":
+                cmd.Type = CmdAsync
+            }
+
+            agn.out <- cmd//&AgentCommand{Tag: tag, Argv: cmd.Argv, Addr: locNodeAddr}
 
             select {
             case rs := <- client.Callback:
+                
+                fmt.Println("Agent Callback", tag)
+
                 var rsp string
-                if rs == 9 {
-                    rsp = "-ERR timeout"
+                
+                if client.Reply.Err != nil {
+                    rsp = "-ERR\r\n"
                 } else if rs == 1 {
-                    rsp = fmt.Sprintf(client.Reply.Val +"\r\n")
+                    if client.Reply.Type == ReplyString {
+                        rsp = fmt.Sprintf("$"+ strconv.Itoa(len(client.Reply.Val)) +"\r\n"+ client.Reply.Val +"\r\n")
+                    } else {
+                        rsp = "+OK\r\n"
+                    }
+                } else if rs == 9 {
+                    rsp = "-ERR timeout\r\n"
+                } else {
+                    rsp = "-ERR\r\n"
                 }
+
                 fmt.Println("Reply", client.Reply)
+                
+
                 //ret := fmt.Sprintf("-ERROR %d\r\n", st)
                 //rsp := fmt.Sprintf(client.Reply.Val +"\r\n")
                 _, _ = conn.Write([]byte(rsp))
                 //fmt.Println("Call Back", st)
-                if false {
-                    time.Sleep(2e9)
-                }
+
+            case <- time.After(10e9):
+                _, _ = conn.Write([]byte("-ERR timeout"))
+                fmt.Println("Time out", tag)
             }
         }
     }
