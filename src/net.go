@@ -94,8 +94,6 @@ func (kpn *Kpnet) handleSending() {
 
             if _, err = kpn.sock.WriteTo(p.Msg, addr); err != nil {
                 fmt.Println("error: handleSending() ", addr.String(), err)
-            } else {
-            //fmt.Println("handleSending() to", p.Addr)
             }
         }()
     }

@@ -79,57 +79,25 @@ func (a *Agent) sending() {
     for cmd := range a.out {
 
         go func() {
-        //fmt.Println("out", time.Now())
 
-        rep := new(Reply)
+            rep := new(Reply)
+
+            // Asynchronous callback
+            if cmd.Type == CmdAsync {
+                _ = sock.Go("Server.Process", cmd, &rep, nil)
+                return
+            }
         
-        /* rep.Type = ReplyString
-        rep.Val  = "TEST"
-
-        a.Lock.Lock()
-        if c, ok := a.clients[cmd.Tag]; ok {
-            c.Rep = rep
-            c.Sig <- 1
-        }
-        a.Lock.Unlock()
-
-        continue
-        */
-
-        // Asynchronous callback
-        if cmd.Type == CmdAsync {
-            _ = sock.Go("Server.Process", cmd, &rep, nil)
-            return
-        }
+            // Synchronous Reply
+            err = sock.Call("Server.Process", cmd, &rep)
         
-        // Synchronous Reply
-        err = sock.Call("Server.Process", cmd, &rep)
-        
-        a.Lock.Lock()
-        if c, ok := a.clients[cmd.Tag]; ok {
-            c.Rep = rep
-            c.Sig <- 1
-        }
-        a.Lock.Unlock()
-        }()
-
-        /*rs := sock.Go("Server.Process", cmd, &rep, nil)
-
-        // Asynchronous callback
-        if cmd.Type == CmdAsync {
-            continue
-        }
-
-        // Synchronous Reply
-        go func() {
-            <- rs.Done
             a.Lock.Lock()
             if c, ok := a.clients[cmd.Tag]; ok {
                 c.Rep = rep
                 c.Sig <- 1
             }
             a.Lock.Unlock()
-        }() */
+        }()
     }
 }
 
@@ -143,9 +111,6 @@ func (a *Agent) handler(conn net.Conn) {
     a.clients[sid] = c
 
     defer func() {
-        
-        fmt.Println("return")
-
         conn.Close()
         a.Lock.Lock()
         delete(a.clients, sid)
@@ -162,25 +127,6 @@ func (a *Agent) handler(conn net.Conn) {
     cmd := new(Command)
     cmd.Addr = locNodeAddr
     cmd.Tag  = sid
-
-    /* for {
-        //fmt.Println("job", time.Now())
-        var buf [IOBUF_LEN]byte
-        _, err := conn.Read(buf[0:])
-        if err != nil {
-            return
-        }
-
-        a.out <- cmd
-
-        select {
-        case <- c.Sig:                
-            rsp := fmt.Sprintf("$%d\r\n%s\r\n",  len("TEST"), "TEST")
-            _, _ = conn.Write([]byte(rsp))
-        }
-    }
-    return
-    */
 
     for {
 

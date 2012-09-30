@@ -1,21 +1,37 @@
 
+
+
+client <=> telnet <=> Proxy <--- PRC ---> Server <== RPC ==> Server
+                      ^
+                      |
+                      v
+                    Redis
+
+
+
+--------------------------------
 h5keeper
     1.0.x
         - Paxos Lease
-        Paxos item/*
-        Paxos grp/*
+        - Paxos item/*
         Paxos watch/*
+        Paxos grp/*     ?
+        
     1.1.x
         management
     1.2.x
-        protocol
+        API fix
+        protocol (Proxy -> RPC)
     1.3.x
         exception
     1.4.x
+        data sync
+    1.5.x
         refactoring
         optimization
-    1.5.x
+    1.6.x
         beta
+
 --------------------------------
     2.x
         release

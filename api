@@ -2,6 +2,7 @@
 * User APIs
     - SetContent(key, value, ver)
     - GetContent(key)
+    - DelContent(key, ver)
 
 * Keeper APIs
     
