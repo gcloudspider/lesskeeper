@@ -73,7 +73,7 @@ func ActionLedNew(req ActionRequst, addr string) {
         "action": "LedNewCb",
         "node": locNode,
         "kpno": strconv.Itoa(kpsNum),
-        "AcceptNumber": strconv.Itoa(vnumi),
+        "VerNew": strconv.Itoa(vnumi),
         "AcceptContent": vval,
     }
     kpn.Send(msg, "255.255.255.255:9528")    
@@ -81,7 +81,7 @@ func ActionLedNew(req ActionRequst, addr string) {
 
 func ActionLedNewCb(req ActionRequst, addr string) {
     
-    if !req.isset("node") || !req.isset("kpno") || !req.isset("AcceptNumber") || !req.isset("AcceptContent") {
+    if !req.isset("node") || !req.isset("kpno") || !req.isset("VerNew") || !req.isset("AcceptContent") {
         return
     }
 
@@ -90,7 +90,7 @@ func ActionLedNewCb(req ActionRequst, addr string) {
     }
 
     node, _ := req["node"]
-    anum, _ := req["AcceptNumber"]
+    anum, _ := req["VerNew"]
     anumi, _ := strconv.Atoi(anum.(string))
 
     aval, _ := req["AcceptContent"]
@@ -271,7 +271,8 @@ func ActionLedCast(req ActionRequst, addr string) {
 }
 
 func ActionItemPut(req ActionRequst, addr string) {
-    if !req.isset("node") || !req.isset("ItemNumber") || !req.isset("ItemKey") || !req.isset("ItemContent") || !req.isset("ItemNumberNext") {
+    
+    if !req.isset("node") || !req.isset("ItemKey") || !req.isset("ItemContent") || !req.isset("VerNew") {
         return
     }
 
@@ -280,57 +281,39 @@ func ActionItemPut(req ActionRequst, addr string) {
     }
 
     node, _ := req["node"]
-
-    linum := "0"
-
-    prenum, _ := req["ItemNumber"]
     key, _ := req["ItemKey"]
 
-    lset, err := kpd.Hgetall("c:def:"+ key.(string))
-    if err == nil {
-        lsetn, _ := lset["n"]
-        if lsetn != "" && lsetn != linum  {
-            linum = lsetn
-        }
-    }
-
+    vernew, _ := req["VerNew"]
     msg := map[string]string{
-        "action": "ItemPutCb",
-        "node": node.(string),
-        "ctlid": strconv.Itoa(kpsNum),
-        "AcceptKey": key.(string),
+        "node": locNode,
+        "action":   "ItemPutCb",
+        "VerNew":   vernew.(string),
+        //"ctlid":    locNode,
     }
 
-    postnum, _ := req["ItemNumberNext"]
-
-    if linum == "0" || linum == prenum.(string) {
-        
-        postval, _ := req["ItemContent"]
-        it := map[string]string{
-            "n": postnum.(string),
-            "v": postval.(string),
-        }
-        //fmt.Println(it)
-        kpd.Hmset("c:def:"+ key.(string), it)
-        msg["AcceptNumber"] = postnum.(string)
-    } else {
-        msg["AcceptNumber"] = prenum.(string)
+    valnew, _ := req["ItemContent"]
+    it := map[string]string{
+        "n": vernew.(string),
+        "v": valnew.(string),
     }
+
+    kpd.Hmset("c:def:"+ key.(string), it) // TODO, waiting valued
 
     // Ensure ctl:loctid to Max
-    postnumi, _ := strconv.Atoi(postnum.(string));
-    nnum := postnumi / len(kpls)
+    vernewi, _ := strconv.Atoi(vernew.(string));
+    nnum := vernewi / len(kpls)
     ltid, _ := kpd.Incrby("ctl:ltid", 0)
     if ltid < nnum && locNode != node.(string) {
         kpd.Incrby("ctl:ltid", nnum - ltid)
     }
 
+    //fmt.Println("ActionItemPut", msg)
     kpn.Send(msg, addr +":9528")
 }
 
 func ActionItemPutCb(req ActionRequst, addr string) {
 
-    if !req.isset("node") || !req.isset("ctlid") || !req.isset("AcceptNumber") || !req.isset("AcceptKey") {
+    if !req.isset("node") || !req.isset("VerNew") {
         return
     }
 
@@ -339,93 +322,69 @@ func ActionItemPutCb(req ActionRequst, addr string) {
     }
 
     node, _ := req["node"]
-    anum, _ := req["AcceptNumber"]
-    anumi, _ := strconv.Atoi(anum.(string))
+    vernew, _ := req["VerNew"]
+    
+    anumi, _ := strconv.Atoi(vernew.(string))
     ltid, _ := kpd.Incrby("ctl:ltid", 0)
     rnum := anumi / len(kpls)
     if ltid < rnum && node.(string) != locNode {
         kpd.Incrby("ctl:ltid", rnum - ltid)
     }
 
-    akey, _ := req["AcceptKey"]
-    if err := kpd.Exists("qk:"+ akey.(string) + anum.(string)); err != nil {
-        return
+    key  := ""
+    tag  := ""
+    ipcb := ""
+    it := map[string]string{}
+
+    proposal_servlock.Lock()
+    if p, ok := proposals[vernew.(string)]; ok {
+        
+        proposals[vernew.(string)].Yes++
+
+        if 2 * p.Yes > len(kpls) {
+            
+            key = p.Key
+            tag = p.Tag
+            ipcb = p.Addr
+            
+            it = map[string]string{
+                "n": vernew.(string),
+                "v": p.Val,
+            }
+        }
     }
+    proposal_servlock.Unlock()
 
-    apt, _ := kpd.Incrby("qk:"+ akey.(string) + anum.(string), 1)
-    kpd.Expire("qk:"+ akey.(string) + anum.(string), 3)
+    
+    // SUCCESS, Callback status
+    if key != "" {
+        //fmt.Println("OK")
+        _ = kpd.Hmset("c:def:"+ key, it)
 
-    if 2 * apt > len(kpls) {
-        //fmt.Println("QQQQQQQQQQQQQQQQQQ", "qv:"+ akey.(string) + anum.(string))
-        bdy, _ := kpd.Get("qv:"+ akey.(string) + anum.(string))
-        //fmt.Println(bdy)
-        bdy2 := strings.SplitN(bdy, "#", 4)
-        //fmt.Println("ItemPutCbClient", bdy2)
-        if len(bdy2) < 4 {
-            return // error handler
+        msg := map[string]string{
+            "action": "AgentItemPutCb",
+            "Tag": tag,
+            "status": "10",// TODO strconv.Itoa(ReplyOK),
         }
-
-        it := map[string]string{
-            "n": anum.(string),
-            "v": bdy2[3], // TODO
-        }
-
-        //fmt.Println(it)
-        //fmt.Println("c:def:"+ akey.(string))
-        //return
-        _ = kpd.Hmset("c:def:"+ akey.(string), it)
-        //return
-
-        //if node.(string) == locNode {
-        //    if _, ok := kpcw[anum.(string)]; ok {
-        //        kpcw[anum.(string)].status <- 1
-        //    }
-        //} else {
-            //it["k"] = akey.(string)
-            //it["node"] = locNode
-            it["action"] = "AgentItemPutCb"
-            it["Tag"] = bdy2[1]
-            it["status"] = "1"
-
-            kpn.Send(it, bdy2[0] +":9528")
-        //}
+        //fmt.Println("ActionItemPutCb", msg)
+        kpn.Send(msg,  ipcb+":9528")
     }
 }
 
-func ActionAgentItemPutCb(req ActionRequst, addr string) {
-    /* if !req.isset("n") || !req.isset("k") {
-        return
-    } */
+func ActionAgentItemPutCb(req ActionRequst, addr string) { 
 
     if tag, ok := req["Tag"]; ok {
         if rs, ok := req["status"]; ok {
             if status, err := strconv.Atoi(rs.(string)); err == nil {
-                agn.Lock.Lock()
-                if c, ok := clients[tag.(string)]; ok {
-                    c.Callback <- status
+                agent.Lock.Lock()
+                if c, ok := agent.clients[tag.(string)]; ok {
+                    c.Sig <- status
                 }
-                agn.Lock.Unlock()
+                //fmt.Println("ActionAgentItemPutCb", status)
+                agent.Lock.Unlock()
             }
         }
     }
-
-    /*
-    node, _ := req["node"]
-
-    if node.(string) == locNode {
-        return
-    }
-
-    n, _ := req["n"]
-    v, _ := req["v"]
-    k, _ := req["k"]
-    it := map[string]string{
-        "n": n.(string),
-        "v": v.(string),
-    }
-
-    kpd.Hmset("c:def:"+ k.(string), it)
-    */
 }
 
 func (req ActionRequst) isset(key string) bool {    

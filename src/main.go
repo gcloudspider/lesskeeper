@@ -7,32 +7,23 @@ import (
     "runtime"
 )
 
-type ClientWatcher struct {
-    status chan int
-}
-
 var kpd Kpdata
 var kpn *Kpnet
-var agn *Agent
-//var kpcw = map[string]ClientWatcher{}
+var agent *Agent
 
 func main() {
-    
-    fmt.Println("ENV NumCPU:", runtime.NumCPU())
-    
-    runtime.GOMAXPROCS(runtime.NumCPU())
-
-    rand.Seed(time.Now().UnixNano())
 
     start := time.Now()
+
+    runtime.GOMAXPROCS(runtime.NumCPU())
+
+    rand.Seed(time.Now().UnixNano())    
     
     NewServer(9531)
 
-    agn = NewAgent(9530)
+    agent = NewAgent(9530)
 
     kpd.Initialize()
-
-    //time.Sleep(1800e9)
 
     kpn = NewNet(9528)
     

@@ -76,25 +76,28 @@ func (kpn *Kpnet) handleSending() {
 
     for p := range kpn.out {
 
-        if p == nil {
-            continue
-        }
+        go func() {
+            
+            if p == nil {
+                return
+            }
         
-        if p.Addr == "" {
-            continue
-        }
+            if p.Addr == "" {
+                return
+            }
 
-        addr, err := net.ResolveUDPAddr("ip4", p.Addr)
-        if err != nil {
-            fmt.Println("error: handleSending() invalid p.Addr")
-            continue
-        }
+            addr, err := net.ResolveUDPAddr("ip4", p.Addr)
+            if err != nil {
+                fmt.Println("error: handleSending() invalid p.Addr")
+                return
+            }
 
-        if _, err = kpn.sock.WriteTo(p.Msg, addr); err != nil {
-            fmt.Println("error: handleSending() ", addr.String(), err)
-        } else {
+            if _, err = kpn.sock.WriteTo(p.Msg, addr); err != nil {
+                fmt.Println("error: handleSending() ", addr.String(), err)
+            } else {
             //fmt.Println("handleSending() to", p.Addr)
-        }
+            }
+        }()
     }
 }
 
@@ -134,7 +137,7 @@ func dispatchEvent(kpn *Kpnet, p *Packet) {
         return
     }
 
-    //fmt.Println("Handling -> ", action.(string), "\n\t", req)
+    //fmt.Println("dispatchEvent -> ", action.(string), "\n\t", req)
 
     ip := strings.Split(p.Addr, ":")[0]
 
