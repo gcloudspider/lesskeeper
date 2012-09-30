@@ -2,5 +2,5 @@
 
 find . -name "*.go" |xargs cat|grep -v ^$|wc -l
 
-go run utils.go kpserver.go kpagent.go kpaction.go cmd.go reply.go kpnet.go kpdata.go jtloc.go main.go
+go run utils.go server.go agent.go cmdaction.go cmd.go reply.go net.go data.go jtloc.go main.go
 
