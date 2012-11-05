@@ -10,20 +10,20 @@ type Kpdata struct {
     c   *redis.Client
 }
 
-func (kpd *Kpdata) Initialize() {
+func (db *Kpdata) Initialize() {
 
-    if kpd.c != nil {
-        fmt.Println("kpd.c exists...")
+    if db.c != nil {
+        fmt.Println("db.c exists...")
         return
     }
 
     conf := redis.DefaultConfig()
-    kpd.c = redis.NewClient(conf)
+    db.c = redis.NewClient(conf)
 }
 
-func (kpd *Kpdata) Set(key string, val string) error {
+func (db *Kpdata) Set(key string, val string) error {
     
-    r := kpd.c.Set(key, val)
+    r := db.c.Set(key, val)
     if r.Err != nil {
         return r.Err
     }
@@ -31,9 +31,9 @@ func (kpd *Kpdata) Set(key string, val string) error {
     return nil
 }
 
-func (kpd *Kpdata) Setex(key string, ttl int, val string) error {
+func (db *Kpdata) Setex(key string, ttl int, val string) error {
 
-    r := kpd.c.Setex(key, ttl, val)
+    r := db.c.Setex(key, ttl, val)
     if r.Err != nil {
         return r.Err
     }
@@ -41,78 +41,78 @@ func (kpd *Kpdata) Setex(key string, ttl int, val string) error {
     return nil
 }
 
-func (kpd *Kpdata) Get(key string) (string, error) {
-    return kpd.c.Get(key).Str()      
+func (db *Kpdata) Get(key string) (string, error) {
+    return db.c.Get(key).Str()      
 }
 
-func (kpd *Kpdata) Keys(key string) ([]string, error) {
-    return kpd.c.Keys(key).List()
+func (db *Kpdata) Keys(key string) ([]string, error) {
+    return db.c.Keys(key).List()
 }
 
-func (kpd *Kpdata) Del(key string) (bool, error) {
-    r := kpd.c.Del(key)
+func (db *Kpdata) Del(key string) (bool, error) {
+    r := db.c.Del(key)
     if r.Err != nil {
         return false, r.Err
     }
     return true, nil
 }
 
-func (kpd *Kpdata) Hget(key string, hkey string) (string, error) {
-    r := kpd.c.Hget(key, hkey)
+func (db *Kpdata) Hget(key string, hkey string) (string, error) {
+    r := db.c.Hget(key, hkey)
     if r.Err != nil {
         return "", r.Err
     }
     return r.Str()
 }
 
-func (kpd *Kpdata) Hset(key string, hkey string, hval string) error {
-    r := kpd.c.Hset(key, hkey, hval)
+func (db *Kpdata) Hset(key string, hkey string, hval string) error {
+    r := db.c.Hset(key, hkey, hval)
     if r.Err != nil {
         return r.Err
     }
     return nil
 }
 
-func (kpd *Kpdata) Hdel(key string, hkey string) error {
-    r := kpd.c.Hdel(key, hkey)
+func (db *Kpdata) Hdel(key string, hkey string) error {
+    r := db.c.Hdel(key, hkey)
     if r.Err != nil {
         return r.Err
     }
     return nil
 }
 
-func (kpd *Kpdata) Hmset(key string, val map[string]string) error {
-    r := kpd.c.Hmset(key, val)
+func (db *Kpdata) Hmset(key string, val map[string]string) error {
+    r := db.c.Hmset(key, val)
     if r.Err != nil {
         return r.Err
     }
     return nil
 }
 
-func (kpd *Kpdata) Hgetall(key string) (map[string]string, error) {
-    return kpd.c.Hgetall(key).Hash()
+func (db *Kpdata) Hgetall(key string) (map[string]string, error) {
+    return db.c.Hgetall(key).Hash()
 }
 
-func (kpd *Kpdata) Incrby(key string, val int) (int, error) {
-    return kpd.c.Incrby(key, val).Int()
+func (db *Kpdata) Incrby(key string, val int) (int, error) {
+    return db.c.Incrby(key, val).Int()
 }
 
-func (kpd *Kpdata) Expire(key string, val int) error {
-    r := kpd.c.Expire(key, val)
+func (db *Kpdata) Expire(key string, val int) error {
+    r := db.c.Expire(key, val)
     if r.Err != nil {
         return r.Err
     }
     return nil
 }
 
-func (kpd *Kpdata) Exists(key string) error {
-    r := kpd.c.Exists(key)
+func (db *Kpdata) Exists(key string) error {
+    r := db.c.Exists(key)
     if r.Err != nil {
         return r.Err
     }
     return nil
 }
 
-func (kpd *Kpdata) Ttl(key string) (int, error) {
-    return kpd.c.Ttl(key).Int()
+func (db *Kpdata) Ttl(key string) (int, error) {
+    return db.c.Ttl(key).Int()
 }
