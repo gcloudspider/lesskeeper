@@ -10,13 +10,6 @@ import (
 
 type ActionRequst map[string]interface{}
 
-func checkCommonParams(req ActionRequst) bool {
-    if _, ok := req["node"]; !ok {
-        return false
-    }
-    return true
-}
-
 func ActionNodeCast(req ActionRequst, addr string) {
     
     node, ok := req["node"]
@@ -270,6 +263,7 @@ func ActionLedCast(req ActionRequst, addr string) {
     }
 }
 
+/*
 func ActionItemPut(req ActionRequst, addr string) {
     
     if !req.isset("node") || !req.isset("ItemKey") || !req.isset("ItemContent") || !req.isset("VerNew") {
@@ -386,6 +380,7 @@ func ActionAgentItemPutCb(req ActionRequst, addr string) {
         }
     }
 }
+*/
 
 func (req ActionRequst) isset(key string) bool {    
     if _, ok := req[key]; ok {

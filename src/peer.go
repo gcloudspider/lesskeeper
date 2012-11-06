@@ -182,12 +182,12 @@ func UDPdispatchEvent(peer *Peer, p *PeerPacket) {
     case "LedCast":
         ActionLedCast(req, ip)
 
-    case "ItemPut":
+    /*  case "ItemPut":
         ActionItemPut(req, ip)
     case "ItemPutCb":
         ActionItemPutCb(req, ip)
     case "AgentItemPutCb":
-        ActionAgentItemPutCb(req, ip)
+        ActionAgentItemPutCb(req, ip) */
     }
 
     return

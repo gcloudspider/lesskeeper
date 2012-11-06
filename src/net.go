@@ -366,12 +366,12 @@ func dispatchEvent(kpn *Kpnet, p *Packet) {
     case "LedCast":
         ActionLedCast(req, ip)
 
-    case "ItemPut":
+    /* case "ItemPut":
         ActionItemPut(req, ip)
     case "ItemPutCb":
         ActionItemPutCb(req, ip)
     case "AgentItemPutCb":
-        ActionAgentItemPutCb(req, ip)
+        ActionAgentItemPutCb(req, ip) */
     
     /* case "LockLease":
         ActionLedNew(req, ip)
