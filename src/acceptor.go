@@ -29,18 +29,17 @@ func (p *Acceptor) Prepare(args *Proposal, rep *ProposalPromise) error {
     if rep.VerNow > 0 {
         return nil
     }
+
+    rep.VerNow = args.VerNow
+    rep.VerSet = args.VerSet
     
     // 
     item, _ := db.Hgetall("c:def:"+ args.Key)   
     if val, ok := item["n"]; ok {
-        if ver, e := strconv.ParseUint(val, 10, 64); e == nil {
+        if ver, e := strconv.ParseUint(val, 10, 64); e == nil && rep.VerNow != ver {
             rep.VerNow = ver
         }
     }
-
-    //if args.VerSet > rep.VerNow {
-        rep.VerSet = args.VerSet
-    //}
 
     proposal_promiselock.Lock()
     proposal_promises[args.Key] = rep
@@ -58,7 +57,35 @@ func (p *Acceptor) Prepare(args *Proposal, rep *ProposalPromise) error {
     return nil
 }
 
-func (p *Acceptor) Accept(args *Proposal, rep *ProposalPromise) error {
+func (p *Acceptor) Accept(args *Proposal, rep *Reply) error {
+    
+    rep.Status = ReplyError
+
+    proposal_promiselock.Lock()
+    pl, _ := proposal_promises[args.Key]
+    proposal_promiselock.Unlock()
+
+    if pl == nil {
+        return nil
+    }
+
+    if args.VerNow == pl.VerNow && args.VerSet == pl.VerSet {
+        
+        item := map[string]string{
+            "v": args.Val,
+            "n": strconv.FormatUint(args.VerSet, 10),
+        }
+
+        //fmt.Println("database", item)
+        db.Hmset("c:def:"+ args.Key, item)
+        rep.Status = ReplyOK
+
+        proposal_promiselock.Lock()
+        if _, ok := proposal_promises[args.Key]; ok {
+            delete(proposal_promises, args.Key)
+        }
+        proposal_promiselock.Unlock()
+    }
 
     return nil
 }

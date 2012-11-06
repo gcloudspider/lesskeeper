@@ -4,7 +4,7 @@ import (
     "fmt"
     "strconv"
     "sync"
-    //"time"
+    "time"
 )
 
 type Proposer int
@@ -142,55 +142,135 @@ func ProposerPut(args map[int][]byte, rep *Reply) {
     proposals[vernews] = pl
 
     //
-
-    call := NewNetCall()
-    call.Method = "Acceptor.Prepare"
-    call.Addr = "127.0.0.1:"+gport
-    call.Args = pl
-    call.Reply = new(ProposalPromise)
+    
 
     fmt.Println("PUT Acceptor.Prepare", pl)
 
-    gnet.Call(call)
+    //gnet.Call(call)
 
-    st := <- call.Status
+    //st := <- call.Status
 
     //var rsp string
-    rs := call.Reply.(*ProposalPromise)
+    //rs := call.Reply.(*ProposalPromise)
 
-    fmt.Println("PUT Acceptor.Prepare", pl, st, rs)
+    //fmt.Println("PUT Acceptor.Prepare", pl, st, rs)
 
+    promised := make(chan uint8, len(kp))
+    go func() {
+        time.Sleep(30e9)
+        promised <- 9
+    }()
 
-    rep.Type = ReplyOK
-    /*req := map[string]string{
-        "node": locNode,
-        "action": "ItemPut",
-        "ItemKey": key,
-        "ItemContent": string(args[2]),
-        "VerNew": vernews,
+    // Acceptor.Prepare
+    for _, v := range kp {
+        
+        go func() {
+            
+            call := NewNetCall()
+    
+            call.Method = "Acceptor.Prepare"
+            call.Args = pl
+            call.Reply = new(ProposalPromise)
+            call.Addr = v +":"+ gport
+            
+            gnet.Call(call)
+
+            _ = <- call.Status
+            
+            rs := call.Reply.(*ProposalPromise)
+            if rs.VerNow == pl.VerNow {
+                promised <- 1
+            } else {
+                promised <- 0
+            }
+        }()
+
+        //fmt.Println(k, v)
     }
 
-    p := new(Proposal)
-    p.Key   = key
-    p.Val   = string(args[2])
-    p.Ver   = vers
-    p.VerNew= vernews
-    p.Addr  = cmd.Addr
-    p.Tag   = cmd.Tag
-    
-    proposals[vernews] = p
+    valued := 0
+    unvalued := 0
 
-    //peer.Send(req, "255.255.255.255:"+ port) // TODO
-    peer.Send(req, "127.0.0.1:"+ port) // TODO
-    
-    // timeout and free
-    go func() {
-        time.Sleep(4e9)
-        proposal_servlock.Lock()
-        if _, ok := proposals[vernews]; ok {
-            delete(proposals, vernews)
+    L: for {
+        select {
+        case s := <- promised:
+            if s == 1 {
+                valued++
+                if 2 * valued > len(kp) {
+                    fmt.Println("Valued")
+                    break L
+                }
+            } else if s == 0 {
+                unvalued++
+                if 2 * unvalued > len(kp) {
+                    rep.Type = ReplyError
+                    rep.Val = "UnValued"
+                    return                }
+            } else {
+                rep.Type = ReplyError
+                return
+            }
         }
-        proposal_servlock.Unlock()
+    }
+
+    // Acceptor.Accept
+    accepted := make(chan uint8, len(kp))
+    go func() {
+        time.Sleep(30e9)
+        accepted <- 9
     }()
-    */
+
+    for _, v := range kp {
+        
+        go func() {
+            
+            call := NewNetCall()
+    
+            call.Method = "Acceptor.Accept"
+            call.Args = pl
+            call.Reply = new(Reply)
+            call.Addr = v +":"+ gport
+            
+            gnet.Call(call)
+
+            _ = <- call.Status
+            
+            rs := call.Reply.(*Reply)
+
+            fmt.Println("Acceptor.Accept", rs)
+            if rs.Status == ReplyOK {
+                accepted <- 1
+            } else {
+                accepted <- 0
+            }
+        }()
+    }
+
+    valued = 0
+    unvalued = 0
+
+    A: for {
+        select {
+        case s := <- accepted:
+            if s == 1 {
+                valued++
+                if 2 * valued > len(kp) {
+                    rep.Type = ReplyOK
+                    break A
+                }
+            } else if s == 0 {
+                unvalued++
+                if 2 * unvalued > len(kp) {
+                    rep.Type = ReplyError
+                    rep.Val = "UnValued"
+                    return                }
+            } else {
+                rep.Type = ReplyError
+                return
+            }
+        }
+    }
+
+
+    return
 }
