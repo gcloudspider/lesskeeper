@@ -30,15 +30,3 @@ type Reply struct {
     
     Elems   []*Reply    // Sub-replies
 }
-
-type NetReply struct {
-
-    Status  uint8       // Reply status
-    Err     error       // Reply error
-
-    Type    uint8       // Reply type
-    Val     string
-    Ver     uint64
-    
-    Elems   []*NetReply    // Sub-replies
-}

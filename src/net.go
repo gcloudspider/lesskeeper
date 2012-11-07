@@ -14,35 +14,42 @@ import (
 
 const UDPMessageSize = 512
 
-type NetRequest struct {
+type NetPacket struct {
     Addr string
     Body []byte
 }
-type NetResponse struct {
 
-}
-
-type NetEventHandler func(... interface{})
+type NetUDPEventHandler func(*NetUDP, *NetPacket)
 
 type NetUDP struct {
+
     sock    *net.UDPConn
-    in      chan *NetRequest
-    out     chan *NetRequest
+    
+    in      chan *NetPacket
+    out     chan *NetPacket
+
+    // Handle incoming packets read from the socket
+    handlers []NetUDPEventHandler
 }
 
 func NewUDPInstance() *NetUDP {
     
     p := new(NetUDP)
 
-    p.in    = make(chan *NetRequest, 100000)
-    p.out   = make(chan *NetRequest, 100000)
+    p.in    = make(chan *NetPacket, 100000)
+    p.out   = make(chan *NetPacket, 100000)
 
-    go p.handleSending()
+    p.handlers = make([]NetUDPEventHandler, 0, 4)
 
     return p
 }
 
-func (nc *NetUDP) ListenAndServe(port string, f NetEventHandler) (err error) {
+// Registers an event handler which is invoked on incoming packets.
+func (this *NetUDP) AddHandler(f NetUDPEventHandler) {
+    this.handlers = append(this.handlers, f)
+}
+
+func (this *NetUDP) ListenAndServe(port string, f NetUDPEventHandler) (err error) {
     
     var addr *net.UDPAddr
     
@@ -51,38 +58,60 @@ func (nc *NetUDP) ListenAndServe(port string, f NetEventHandler) (err error) {
         return err
     }
 
-    if nc.sock, err = net.ListenUDP("udp4", addr); err != nil {
+    if this.sock, err = net.ListenUDP("udp4", addr); err != nil {
         fmt.Println("error: ListenUDP() ", err)
         return err
     }
 
-    go func() {
-        for {
-            var buf [UDPMessageSize]byte
-            n, addr, err := nc.sock.ReadFromUDP(buf[0:])
-            if err != nil {
-                fmt.Println("error receiving(): ", err)
-            }
+    this.handlers = append(this.handlers, f)
 
-            msg := make([]byte, n)
-            copy(msg, buf[0:n])
-        
-            nc.in <- &NetRequest{addr.String(), msg}
-        }
-    }()
-
-    go func() {
-        for p := range nc.in {
-            go f(nc, p)
-        }
-    }()
+    go this.handleReceiving()
+    go this.handleSending()
+    go this.handleDispatching()
 
     return nil
 }
 
-func (nc *NetUDP) handleSending() {
+func (this *NetUDP) Send(msg interface{}, addr string) {
 
-    for p := range nc.out {
+    switch v := msg.(type) {
+    case []byte:
+        this.out <- &NetPacket{addr, v}
+    case string:
+        this.out <- &NetPacket{addr, []byte(v)}
+    case map[string]string:
+        mb, _ := json.Marshal(v)
+        this.out <- &NetPacket{addr, mb}
+    default:
+    }
+}
+
+func (this *NetUDP) handleDispatching() {
+    for p := range this.in {
+        for _, f := range this.handlers {
+            go f(this, p)
+        }
+    }
+}
+
+func (this *NetUDP) handleReceiving() {
+    for {
+        var buf [UDPMessageSize]byte
+        n, addr, err := this.sock.ReadFromUDP(buf[0:])
+        if err != nil {
+            fmt.Println("error receiving(): ", err)
+        }
+
+        msg := make([]byte, n)
+        copy(msg, buf[0:n])
+        
+        this.in <- &NetPacket{addr.String(), msg}
+    }
+}
+
+func (this *NetUDP) handleSending() {
+
+    for p := range this.out {
 
         go func() {
             
@@ -100,7 +129,7 @@ func (nc *NetUDP) handleSending() {
                 return
             }
 
-            if _, err = nc.sock.WriteTo(p.Body, addr); err != nil {
+            if _, err = this.sock.WriteTo(p.Body, addr); err != nil {
                 fmt.Println("error: handleSending() ", addr.String(), err)
             }
         }()
@@ -108,19 +137,7 @@ func (nc *NetUDP) handleSending() {
 }
 
 
-func (nc *NetUDP) Send(body interface{}, addr string) {
-
-    switch v := body.(type) {
-    case []byte:
-        nc.out <- &NetRequest{addr, v}
-    case string:
-        nc.out <- &NetRequest{addr, []byte(v)}
-    case map[string]string:
-        mb, _ := json.Marshal(v)
-        nc.out <- &NetRequest{addr, mb}
-    default:
-    }
-}
+////////////////////////////////////////////////////////////////////////////////
 
 type NetTCP struct {
 
@@ -156,20 +173,20 @@ func NewNetCall() *NetCall {
 
 func NewTCPInstance() *NetTCP {
     
-    nc := new(NetTCP)
+    this := new(NetTCP)
 
-    nc.out   = make(chan *NetCall, 100000)
+    this.out   = make(chan *NetCall, 100000)
 
-    nc.pool  = map[string]*rpc.Client{}
+    this.pool  = map[string]*rpc.Client{}
 
-    go nc.sending()
+    go this.sending()
 
-    return nc
+    return this
 }
 
-func (nc *NetTCP) Listen(port string) (err error) {
+func (this *NetTCP) Listen(port string) (err error) {
 
-    nc.ln, err = net.Listen("tcp", ":"+ port)
+    this.ln, err = net.Listen("tcp", ":"+ port)
     if err != nil {
         fmt.Println("listen error:", err)
     }
@@ -177,23 +194,23 @@ func (nc *NetTCP) Listen(port string) (err error) {
     return nil
 }
 
-func (nc *NetTCP) Call(call *NetCall) {
-    nc.out <- call
+func (this *NetTCP) Call(call *NetCall) {
+    this.out <- call
 }
 
-func (nc *NetTCP) sending() {
+func (this *NetTCP) sending() {
 
     var err error
 
-    for p := range nc.out {
+    for p := range this.out {
         
         var sock *rpc.Client
 
-        if sock = nc.pool[p.Addr]; sock == nil {
+        if sock = this.pool[p.Addr]; sock == nil {
              if sock, err = rpc.DialHTTP("tcp", p.Addr); err != nil {
                 return
             } else {
-                nc.pool[p.Addr] = sock
+                this.pool[p.Addr] = sock
             }
         }
 

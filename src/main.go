@@ -16,7 +16,7 @@ import (
 
 var db Kpdata
 
-var peer *Peer
+var peer *NetUDP
 var port = "9628"
 
 var agent *Agent
@@ -24,9 +24,6 @@ var agentPort = "9530"
 
 var gport = "9538"
 var gnet *NetTCP
-
-var proposer *Proposer
-var proposerPort = "9531"
 
 var bcip = "127.0.0.1"
 
@@ -43,8 +40,11 @@ func main() {
     /** v2/ */
     db.Initialize()
 
-    peer = NewPeer(port)
-    peer.AddHandler(UDPdispatchEvent)
+    //peer = NewPeer(port)
+    //peer.AddHandler(UDPdispatchEvent)
+
+    peer = NewUDPInstance()
+    peer.ListenAndServe(port, CommandDispatchEvent)
 
 
     /** /v2 */
@@ -70,12 +70,6 @@ func main() {
     rpc.HandleHTTP()
    
     go http.Serve(gnet.ln, nil)
-
-    //ProposerStart()
-    //AcceptorStart()
-
-
-    //NewServer()
 
     // go client-cronjob
     go JobTrackerLocal()

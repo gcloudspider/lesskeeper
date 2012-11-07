@@ -25,7 +25,7 @@ type Agent struct {
 
     Lock sync.Mutex
 
-    peer *Peer
+    //peer *Peer
 
     net *NetTCP
 }
@@ -38,46 +38,46 @@ type AgentClient struct {
 
 func NewAgent(port string) *Agent {
     
-    agt    := new(Agent)
-    agt.clients = map[string]*AgentClient{}
+    this    := new(Agent)
+    this.clients = map[string]*AgentClient{}
 
     go func() {
         
-        agt.net = NewTCPInstance()
+        this.net = NewTCPInstance()
         
-        if err := agt.net.Listen(port); err != nil {
+        if err := this.net.Listen(port); err != nil {
             // TODO
         }
 
         for {
-            conn, err := agt.net.ln.Accept()
+            conn, err := this.net.ln.Accept()
             if err != nil {
                 // handle error
                 continue
             }
-            go agt.Handler(conn)
+            go this.Handler(conn)
         }
         
     }()
 
-    return agt
+    return this
 }
 
-func (agt *Agent) Handler(conn net.Conn) {
+func (this *Agent) Handler(conn net.Conn) {
 
     sid := NewRandString(16)
     
     c := new(AgentClient)
     c.Sig = make(chan int, 1)
     
-    agt.clients[sid] = c
+    this.clients[sid] = c
 
     defer func() {
         conn.Close()
         
-        agt.Lock.Lock()
-        delete(agt.clients, sid)
-        agt.Lock.Unlock()
+        this.Lock.Lock()
+        delete(this.clients, sid)
+        this.Lock.Unlock()
     }()
 
     //conn.SetReadTimeout(1e8)
@@ -213,7 +213,7 @@ func (agt *Agent) Handler(conn net.Conn) {
             call.Args = argv
             call.Reply = new(Reply)
             
-            agt.net.Call(call)
+            this.net.Call(call)
 
             //fmt.Println("req", call)
             

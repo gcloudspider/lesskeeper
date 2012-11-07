@@ -6,9 +6,44 @@ import (
     "strconv"
     "math/rand"
     "strings"
+    "encoding/json"
 )
 
 type ActionRequst map[string]interface{}
+
+func CommandDispatchEvent(peer *NetUDP, p *NetPacket) {
+
+    var f interface{}
+    err := json.Unmarshal(p.Body, &f)
+    if err != nil {
+        return
+    }
+    
+    req := f.(map[string]interface{})
+    action, ok := req["action"] 
+    if !ok {
+        return
+    }
+
+    //fmt.Println("v2 dispatchEvent -> ", action.(string), "\n\t", req)
+
+    ip := strings.Split(p.Addr, ":")[0]
+
+    switch action.(string) {
+    
+    case "NodeCast":
+        ActionNodeCast(req, ip)
+    
+    case "LedNew":
+        ActionLedNew(req, ip)
+    case "LedNewCb":
+        ActionLedNewCb(req, ip)
+    case "LedValue":
+        ActionLedValue(req, ip)
+    case "LedCast":
+        ActionLedCast(req, ip)
+    }
+}
 
 func ActionNodeCast(req ActionRequst, addr string) {
     
