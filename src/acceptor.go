@@ -1,7 +1,7 @@
 package main
 
 import (
-    "fmt"
+    //"fmt"
     "strconv"
     "sync"
     "time"
@@ -14,7 +14,7 @@ var proposal_promises = map[string]*ProposalPromise{}
 
 func (p *Acceptor) Prepare(args *Proposal, rep *ProposalPromise) error {
     
-    fmt.Println("Acceptor/Prepare", args)
+    //fmt.Println("Acceptor/Prepare", args)
 
     if locNode == "" || kpsNum == 0 || kpsLed == "" {
         return nil
@@ -58,7 +58,7 @@ func (p *Acceptor) Prepare(args *Proposal, rep *ProposalPromise) error {
 }
 
 func (p *Acceptor) Accept(args *Proposal, rep *Reply) error {
-    
+
     rep.Status = ReplyError
 
     proposal_promiselock.Lock()
@@ -70,7 +70,12 @@ func (p *Acceptor) Accept(args *Proposal, rep *Reply) error {
     }
 
     if args.VerNow == pl.VerNow && args.VerSet == pl.VerSet {
+
+        // TODO
+        // Method Dispatch
+        _ = NodeSet(args)
         
+        /*
         item := map[string]string{
             "v": args.Val,
             "n": strconv.FormatUint(args.VerSet, 10),
@@ -78,6 +83,7 @@ func (p *Acceptor) Accept(args *Proposal, rep *Reply) error {
 
         //fmt.Println("database", item)
         db.Hmset("c:def:"+ args.Key, item)
+        */
         rep.Status = ReplyOK
 
         proposal_promiselock.Lock()

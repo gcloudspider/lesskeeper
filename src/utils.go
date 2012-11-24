@@ -13,6 +13,12 @@ func checkError(err error) {
     }
 }
 
+func Println(format string, a ...interface{}) {
+    fmt.Println(format, a)
+}
+func Sprintf(format string, a ...interface{}) string {
+    return fmt.Sprintf(format, a)
+}
 
 func NewRandString(len int) string {
 

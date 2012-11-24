@@ -2,5 +2,5 @@
 
 find . -name "*.go" |xargs cat|grep -v ^$|wc -l
 
-go run utils.go proposer.go acceptor.go agent.go cmdaction.go reply.go data.go jtloc.go main.go net.go
+go run utils.go proposer.go acceptor.go agent.go cmdaction.go reply.go data.go jtloc.go main.go net.go node.go
 

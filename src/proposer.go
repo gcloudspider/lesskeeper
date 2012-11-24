@@ -1,7 +1,6 @@
 package main
 
 import (
-    "fmt"
     "strconv"
     "sync"
     "time"
@@ -68,24 +67,18 @@ func ProposerGet(args map[int][]byte, rep *Reply) {
         return
     }
 
-    key := string(args[1])
-    /* if ok, _ := regexp.MatchString("^([0-9a-zA-Z ._-]{1,64})$", key); !ok {
+    path := string(args[1])
+    /* if ok, _ := regexp.MatchString("^([0-9a-zA-Z ._-]{1,64})$", path); !ok {
         rep.Type = ReplyError
         return
     } */
 
-    item, _ := db.Hgetall("c:def:"+ key)
-
-    if val, ok := item["v"]; ok {
-        rep.Val  = val
+    if node, e := NodeGet(path); e == nil {
         rep.Type = ReplyString
+        rep.Val  = node.C
     }
-    
-    if val, ok := item["n"]; ok {
-        if ver, e := strconv.ParseUint(val, 10, 64); e == nil {
-            rep.Ver = ver
-        }
-    }
+
+    return
 }
 
 func ProposerPut(args map[int][]byte, rep *Reply) {
@@ -95,14 +88,14 @@ func ProposerPut(args map[int][]byte, rep *Reply) {
         return
     }
     
-    key := string(args[1])
-    /* if ok, _ := regexp.MatchString("^([0-9a-zA-Z ._-]{1,64})$", key); !ok {
+    path := string(args[1])
+    /* if ok, _ := regexp.MatchString("^([0-9a-zA-Z ._-]{1,64})$", path); !ok {
         rep.Type = ReplyError
         return
     } */
 
     vers := "0"
-    item, err := db.Hgetall("c:def:"+ key)
+    item, err := db.Hgetall("c:def:"+ path)
     if err == nil {
 
         if val, ok := item["n"]; ok {
@@ -125,7 +118,7 @@ func ProposerPut(args map[int][]byte, rep *Reply) {
     vernews := strconv.Itoa(vernewi)
 
     pl := new(Proposal)
-    pl.Key = key
+    pl.Key = path
     pl.Val = string(args[2])
     pl.VerNew = vernews
     pl.Ver    = vers
@@ -141,25 +134,14 @@ func ProposerPut(args map[int][]byte, rep *Reply) {
 
     proposals[vernews] = pl
 
-    //
-    
-
-    fmt.Println("PUT Acceptor.Prepare", pl)
-
-    //gnet.Call(call)
-
-    //st := <- call.Status
-
-    //var rsp string
-    //rs := call.Reply.(*ProposalPromise)
-
-    //fmt.Println("PUT Acceptor.Prepare", pl, st, rs)
+    //fmt.Println("PUT Acceptor.Prepare", pl)
 
     promised := make(chan uint8, len(kp))
     go func() {
         time.Sleep(30e9)
         promised <- 9
     }()
+
 
     // Acceptor.Prepare
     for _, v := range kp {
@@ -197,7 +179,7 @@ func ProposerPut(args map[int][]byte, rep *Reply) {
             if s == 1 {
                 valued++
                 if 2 * valued > len(kp) {
-                    fmt.Println("Valued")
+                    //fmt.Println("Valued")
                     break L
                 }
             } else if s == 0 {
@@ -237,7 +219,7 @@ func ProposerPut(args map[int][]byte, rep *Reply) {
             
             rs := call.Reply.(*Reply)
 
-            fmt.Println("Acceptor.Accept", rs)
+            //fmt.Println("Acceptor.Accept", rs)
             if rs.Status == ReplyOK {
                 accepted <- 1
             } else {

@@ -93,6 +93,14 @@ func (db *Kpdata) Hgetall(key string) (map[string]string, error) {
     return db.c.Hgetall(key).Hash()
 }
 
+func (db *Kpdata) Sadd(key string, member string) error {
+    r := db.c.Sadd(key, member)
+    if r.Err != nil {
+        return r.Err
+    }
+    return nil
+}
+
 func (db *Kpdata) Incrby(key string, val int) (int, error) {
     return db.c.Incrby(key, val).Int()
 }

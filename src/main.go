@@ -12,6 +12,7 @@ import (
 // TODO read
 // http://www.ituring.com.cn/article/14931
 // https://github.com/astaxie/build-web-application-with-golang
+// http://select.yeeyan.org/view/94114/329073/author
 //
 
 var db Kpdata
