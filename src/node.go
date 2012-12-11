@@ -19,7 +19,13 @@ const (
     INodeDir        = "in"+ NodeSepDir +":"
 
     NodeNil         = uint64(1)
-    NodeDir         = uint64(2)    
+    NodeDir         = uint64(2)
+
+    NodeEventNone               = "10"
+    NodeEventCreated            = "11"
+    NodeEventDeleted            = "12"
+    NodeEventDataChanged        = "13"
+    NodeEventChildrenChanged    = "14"
 )
 
 //var pathRe = mustBuildRe(NodePathPat)

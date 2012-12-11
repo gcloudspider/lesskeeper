@@ -37,7 +37,7 @@ var watches     = map[string]ProposalWatcher{}
 var watchmq     = make(chan *WatcherQueue, 100000)
 type WatcherQueue struct {
     Path    string
-    Status  uint16
+    Event   string
     Rev     uint64
 }
 
@@ -54,6 +54,7 @@ func WatcherInitialize() {
                         msg := map[string]string{
                             "action": "WatchEvent",
                             "path": q.Path,
+                            "event": q.Event,
                         }
                         peer.Send(msg, ip +":"+ port)
                     }
@@ -133,7 +134,9 @@ func ProposerSet(args map[int][]byte, rep *Reply) {
         rep.Type = ReplyError
         return
     }
-    
+
+    nodeEvent := NodeEventNone
+
     path := string(args[1])
     /* if ok, _ := regexp.MatchString("^([0-9a-zA-Z ._-]{1,64})$", path); !ok {
         rep.Type = ReplyError
@@ -147,6 +150,9 @@ func ProposerSet(args map[int][]byte, rep *Reply) {
             rep.Type = ReplyOK
             return
         }
+        nodeEvent = NodeEventDataChanged
+    } else {
+        nodeEvent = NodeEventCreated
     }
 
     n , _ := db.Incrby("ctl:ltid", 1)
@@ -266,7 +272,7 @@ func ProposerSet(args map[int][]byte, rep *Reply) {
                 valued++
                 if 2 * valued > len(kp) {
                     rep.Type = ReplyOK
-                    watchmq <- &WatcherQueue{strings.Trim(path, "/"), 0, 0}
+                    watchmq <- &WatcherQueue{strings.Trim(path, "/"), nodeEvent, 0}
                     break A
                 }
             } else if s == 0 {

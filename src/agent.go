@@ -26,7 +26,7 @@ type Agent struct {
 
     clients map[string]*AgentClient
 
-    watchmq chan string
+    watchmq chan *WatcherQueue
 
     Lock sync.Mutex
 
@@ -44,7 +44,7 @@ func NewAgent(port string) *Agent {
     
     this    := new(Agent)
     this.clients = map[string]*AgentClient{}
-    this.watchmq = make(chan string, 100000)
+    this.watchmq = make(chan *WatcherQueue, 100000)
 
     go func() {
         
@@ -66,12 +66,13 @@ func NewAgent(port string) *Agent {
     }()
 
     go func() {
-        for path := range this.watchmq {
+        for q := range this.watchmq {
             // Println("Agent Watch Event", path)
             this.Lock.Lock()
             for _, c := range this.clients {
-                if c.WatchPath == path {
+                if c.WatchPath == q.Path {
                     c.Sig <- 1
+                    c.Rep.Val = q.Event
                 }
             }
             this.Lock.Unlock()            
@@ -87,6 +88,7 @@ func (this *Agent) Handler(conn net.Conn) {
     
     c := new(AgentClient)
     c.Sig = make(chan int, 1)
+    c.Rep = new(Reply)
     
     this.clients[sid] = c
 
@@ -275,13 +277,14 @@ func (this *Agent) Handler(conn net.Conn) {
                 case ReplyNil:
                     rsp = "+OK\r\n" // TODO
                 case ReplyWatch:
+                    //c.Rep = call.Reply
                     for {
                         t := time.Now()
                         ut := t.Unix()
                         select {
                         case <- c.Sig:
-                            Println("Agent Watch Sig", c.Sig)
-                            rsp = "+OK\r\n"
+                            Println("Agent Watch Sig", c.Sig, "Event", c.Rep.Val)
+                            rsp = fmt.Sprintf("+%s\r\n", c.Rep.Val)
                             goto RSP
                         case <- time.After(3e9):
                             Println("Agent Watch Loop", ut)

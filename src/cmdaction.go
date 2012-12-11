@@ -50,12 +50,12 @@ func CommandDispatchEvent(peer *NetUDP, p *NetPacket) {
 
 func ActionWatchEvnet(req ActionRequst, addr string) {
     
-    if !req.isset("path") {
+    if !req.isset("path") || !req.isset("event") {
         return
     }
 
-    Println("WE", req)
-    agent.watchmq <- req["path"].(string)
+    //Println("WE", req)
+    agent.watchmq <- &WatcherQueue{req["path"].(string), req["event"].(string), 0}
 
     /*if tag, ok := req["Tag"]; ok {
         if rs, ok := req["status"]; ok {
