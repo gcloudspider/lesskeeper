@@ -4,6 +4,7 @@ import (
     "strconv"
     "sync"
     "time"
+    "strings"
 )
 
 type Proposer int
@@ -12,37 +13,55 @@ type Proposal struct {
     Key     string
     Val     string
 
-    Ver     string
-    VerNew  string
-
     VerNow  uint64
     VerSet  uint64
     
     Tag     string
     Addr    string
-    Yes     int
 
     Valued  int
     Unvalued int
 }
 
-type ProposalVersion uint64
-
-type Proposal2 struct {
-    Key     string
-    Val     string
-    VerNow  uint64
-    VerSet  uint64
-}
-var pls map[uint64]*Proposal2
-
 type ProposalPromise struct {
     VerNow, VerSet uint64
 }
 
-var proposals map[string]*Proposal
+var proposals = map[uint64]*Proposal{}
 var proposal_servlock sync.Mutex
 
+type ProposalWatcher map[string]int
+
+var watcherlock sync.Mutex
+var watches     = map[string]ProposalWatcher{}
+var watchmq     = make(chan *WatcherQueue, 100000)
+type WatcherQueue struct {
+    Path    string
+    Status  uint16
+    Rev     uint64
+}
+
+func WatcherInitialize() {
+
+    go func() {
+
+        for q := range watchmq {
+
+            if w, ok := watches[q.Path]; ok {
+                for hostid, _ := range w {
+                    if ip, ok := kp[hostid]; ok {
+                        // Println("Send to", ip +":"+ port)
+                        msg := map[string]string{
+                            "action": "WatchEvent",
+                            "path": q.Path,
+                        }
+                        peer.Send(msg, ip +":"+ port)
+                    }
+                }
+            }
+        }
+    }()
+}
 
 func (p *Proposer) Process(args map[int][]byte, rep *Reply) error {
 
@@ -54,10 +73,37 @@ func (p *Proposer) Process(args map[int][]byte, rep *Reply) error {
     case "GET":
         ProposerGet(args, rep)
     case "SET":
-        ProposerPut(args, rep)
+        ProposerSet(args, rep)
+    case "WATCH":
+        ProposerWatch(args, rep)
     }
     
     return nil
+}
+
+func ProposerWatch(args map[int][]byte, rep *Reply) {
+
+    rep.Type = ReplyWatch
+
+    if len(args) < 4 {
+        rep.Type = ReplyError
+        return
+    }
+    path := strings.Trim(string(args[1]), "/")
+
+    var w ProposalWatcher
+    var ok bool
+    watcherlock.Lock()
+    if w, ok = watches[path]; !ok {
+        w = map[string]int{}
+        watches[path] = w
+    }
+    ttl, _ := strconv.Atoi(string(args[2]))
+    w[string(args[3])] = ttl
+    watcherlock.Unlock()
+
+    //Println("args==", args, w)
+    return
 }
 
 func ProposerGet(args map[int][]byte, rep *Reply) {
@@ -81,7 +127,7 @@ func ProposerGet(args map[int][]byte, rep *Reply) {
     return
 }
 
-func ProposerPut(args map[int][]byte, rep *Reply) {
+func ProposerSet(args map[int][]byte, rep *Reply) {
 
     if len(args) < 3 {
         rep.Type = ReplyError
@@ -94,46 +140,29 @@ func ProposerPut(args map[int][]byte, rep *Reply) {
         return
     } */
 
-    vers := "0"
-    item, err := db.Hgetall("c:def:"+ path)
-    if err == nil {
-
-        if val, ok := item["n"]; ok {
-            if val != vers {
-                vers = val
-            }
-        }
-
-        if val, ok := item["v"]; ok {
-            if val == string(args[2]) {
-                rep.Type = ReplyOK
-                return
-            }
+    node, _ := NodeGet(path)
+    if node.R > 0 {
+        if node.C == string(args[2]) {
+            //Println("same node", path)
+            rep.Type = ReplyOK
+            return
         }
     }
 
     n , _ := db.Incrby("ctl:ltid", 1)
     vernewi := len(kps) * n + kpsNum - 1
-
-    vernews := strconv.Itoa(vernewi)
+    verset := uint64(vernewi)
+    //vernews := strconv.Itoa(vernewi)
 
     pl := new(Proposal)
     pl.Key = path
     pl.Val = string(args[2])
-    pl.VerNew = vernews
-    pl.Ver    = vers
+    pl.VerNow = node.R
+    pl.VerSet = verset
     pl.Valued    = 0
-    pl.Unvalued  = 0
+    pl.Unvalued  = 0   
 
-    if v, e := strconv.ParseUint(vers, 10, 64); e == nil {
-        pl.VerNow = v
-    }
-    if v, e := strconv.ParseUint(vernews, 10, 64); e == nil {
-        pl.VerSet = v
-    }
-
-    proposals[vernews] = pl
-
+    proposals[verset] = pl
     //fmt.Println("PUT Acceptor.Prepare", pl)
 
     promised := make(chan uint8, len(kp))
@@ -141,7 +170,6 @@ func ProposerPut(args map[int][]byte, rep *Reply) {
         time.Sleep(30e9)
         promised <- 9
     }()
-
 
     // Acceptor.Prepare
     for _, v := range kp {
@@ -238,6 +266,7 @@ func ProposerPut(args map[int][]byte, rep *Reply) {
                 valued++
                 if 2 * valued > len(kp) {
                     rep.Type = ReplyOK
+                    watchmq <- &WatcherQueue{strings.Trim(path, "/"), 0, 0}
                     break A
                 }
             } else if s == 0 {
@@ -256,3 +285,4 @@ func ProposerPut(args map[int][]byte, rep *Reply) {
 
     return
 }
+

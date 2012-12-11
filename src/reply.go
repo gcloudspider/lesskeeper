@@ -9,6 +9,7 @@ const (
     ReplyNil        uint8 = 4
     ReplyString     uint8 = 5
     ReplyMulti      uint8 = 6
+    ReplyWatch      uint8 = 7
 )
 
 //#define REDIS_REPLY_STRING 1

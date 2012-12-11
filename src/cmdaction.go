@@ -42,7 +42,33 @@ func CommandDispatchEvent(peer *NetUDP, p *NetPacket) {
         ActionLedValue(req, ip)
     case "LedCast":
         ActionLedCast(req, ip)
+
+    case "WatchEvent":
+        ActionWatchEvnet(req, ip)
     }
+}
+
+func ActionWatchEvnet(req ActionRequst, addr string) {
+    
+    if !req.isset("path") {
+        return
+    }
+
+    Println("WE", req)
+    agent.watchmq <- req["path"].(string)
+
+    /*if tag, ok := req["Tag"]; ok {
+        if rs, ok := req["status"]; ok {
+            if status, err := strconv.Atoi(rs.(string)); err == nil {
+                agent.Lock.Lock()
+                if c, ok := agent.clients[tag.(string)]; ok {
+                    c.Sig <- status
+                }
+                //fmt.Println("ActionAgentItemPutCb", status)
+                agent.Lock.Unlock()
+            }
+        }
+    }*/
 }
 
 func ActionNodeCast(req ActionRequst, addr string) {

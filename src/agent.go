@@ -7,12 +7,15 @@ import (
     //"errors"
     "strings"
     "sync"
+    "time"
 )
 
 //const MAX_QUERYBUF_LEN = 1024 * 1024    // 1GB max query buffer
 const AGENT_IOBUF_LEN       = 32
 const AGENT_INLINE_MAX_SIZE = 1024 * 64      // Max size of inline reads
 const AGENT_TIMEOUT         = 3e9
+
+//var watches map[string]ProposalWatcher
 
 type Agent struct {
 
@@ -23,23 +26,25 @@ type Agent struct {
 
     clients map[string]*AgentClient
 
-    Lock sync.Mutex
+    watchmq chan string
 
-    //peer *Peer
+    Lock sync.Mutex
 
     net *NetTCP
 }
 
 type AgentClient struct {
     // lastinteraction int
-    Sig chan int
-    Rep *Reply
+    Sig         chan int
+    Rep        *Reply
+    WatchPath   string
 }
 
 func NewAgent(port string) *Agent {
     
     this    := new(Agent)
     this.clients = map[string]*AgentClient{}
+    this.watchmq = make(chan string, 100000)
 
     go func() {
         
@@ -60,6 +65,19 @@ func NewAgent(port string) *Agent {
         
     }()
 
+    go func() {
+        for path := range this.watchmq {
+            // Println("Agent Watch Event", path)
+            this.Lock.Lock()
+            for _, c := range this.clients {
+                if c.WatchPath == path {
+                    c.Sig <- 1
+                }
+            }
+            this.Lock.Unlock()            
+        }
+    }()
+
     return this
 }
 
@@ -73,6 +91,9 @@ func (this *Agent) Handler(conn net.Conn) {
     this.clients[sid] = c
 
     defer func() {
+
+        Println("connection close()")
+
         conn.Close()
         
         this.Lock.Lock()
@@ -80,7 +101,8 @@ func (this *Agent) Handler(conn net.Conn) {
         this.Lock.Unlock()
     }()
 
-    //conn.SetReadTimeout(1e8)
+    conn.SetDeadline(time.Now().Add(5 * time.Second))
+    //return
 
     qbuf            := []byte{}
     multiBulkLen    := 0
@@ -149,6 +171,7 @@ func (this *Agent) Handler(conn net.Conn) {
             // Reset all
             argc = 0
             argv = map[int][]byte{}
+            c.WatchPath = ""
         }
 
         for {
@@ -206,8 +229,18 @@ func (this *Agent) Handler(conn net.Conn) {
         if multiBulkLen == 0 && argc > 0 {
 
             qbuf = qbuf[pos:n]
+            var rsp string
 
             // fmt.Println("Agent DONE Buffer", sid, pos, len(qbuf), string(qbuf[0:pos]), string(qbuf[pos:]))
+
+            // Watch(path, ttl, +sid)
+            if string(argv[0]) == "WATCH" {
+                //Println("argv", argv)
+                if len(argv) == 3 {
+                    argv[3] = []byte(locNode)
+                    c.WatchPath = strings.Trim(string(argv[1]), "/")
+                }
+            }
 
             // Append command object to RPC Queue
             call.Args = argv
@@ -216,11 +249,8 @@ func (this *Agent) Handler(conn net.Conn) {
             this.net.Call(call)
 
             //fmt.Println("req", call)
-            
 
-            st := <- call.Status
-
-            var rsp string
+            st := <- call.Status            
             rs := call.Reply.(*Reply)
 
             //fmt.Println("call.reply", st, rs)
@@ -244,14 +274,28 @@ func (this *Agent) Handler(conn net.Conn) {
                     rsp = "+OK\r\n" // TODO
                 case ReplyNil:
                     rsp = "+OK\r\n" // TODO
+                case ReplyWatch:
+                    for {
+                        t := time.Now()
+                        ut := t.Unix()
+                        select {
+                        case <- c.Sig:
+                            Println("Agent Watch Sig", c.Sig)
+                            rsp = "+OK\r\n"
+                            goto RSP
+                        case <- time.After(3e9):
+                            Println("Agent Watch Loop", ut)
+                        }
+                    }
+                    rsp = "+OK\r\n"
                 default:
                     rsp = "-ERR\r\n" // TODO
                 }
 
             }
 
-            //fmt.Println("rsp", rsp)
-
+RSP:
+            //Println("rsp", rsp)
             _, _ = conn.Write([]byte(rsp))
             
         }

@@ -155,7 +155,7 @@ func jobTrackerLocalRefresh() {
         kps[v] = k
 
         if addr, e := db.Hget("ls:"+ v, "addr"); e == nil {
-            kp[k] = addr
+            kp[v] = addr
         }
     }
 

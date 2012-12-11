@@ -25,7 +25,7 @@ const (
 //var pathRe = mustBuildRe(NodePathPat)
 
 type Node struct {
-    
+    P   string  // Path
     C   string  // Content
     R   uint64  // Revison (100 ~ n)
 
@@ -94,9 +94,10 @@ func NodeGet(path string) (*Node, error) {
 
     node := new(Node)    
     for k, v := range item {
-        if k == "v" {
+        switch k {
+        case "v":
             node.C = v
-        } else if k == "r" {
+        case "r":
             if rev, e := strconv.ParseUint(v, 10, 64); e == nil {
                 node.R = rev
             }

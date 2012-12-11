@@ -53,16 +53,16 @@ func main() {
     agent = NewAgent(agentPort)
 
 
+    WatcherInitialize()
     // 
     gnet = NewTCPInstance()
     if err := gnet.Listen(gport); err != nil {
             // TODO
     }
-
-    proposals = map[string]*Proposal{}
     
     pp := new(Proposer)
     rpc.Register(pp)
+    
     //rpc.HandleHTTP()
 
     at := new(Acceptor)
