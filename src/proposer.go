@@ -30,10 +30,10 @@ type ProposalPromise struct {
 var proposals = map[uint64]*Proposal{}
 var proposal_servlock sync.Mutex
 
-type ProposalWatcher map[string]int
+type ProposalWatcher map[string]int64   // map[host]ttl
 
 var watcherlock sync.Mutex
-var watches     = map[string]ProposalWatcher{}
+var watches     = map[string]ProposalWatcher{}  // map[path]*
 var watchmq     = make(chan *WatcherQueue, 100000)
 type WatcherQueue struct {
     Path    string
@@ -48,7 +48,16 @@ func WatcherInitialize() {
         for q := range watchmq {
 
             if w, ok := watches[q.Path]; ok {
-                for hostid, _ := range w {
+                for hostid, ttl := range w {
+
+                    // delay clean watcher queue
+                    if ttl < time.Now().Unix() {
+                        watcherlock.Lock()
+                        delete(w, hostid)
+                        watcherlock.Unlock()
+                        continue
+                    }
+
                     if ip, ok := kp[hostid]; ok {
                         // Println("Send to", ip +":"+ port)
                         msg := map[string]string{
@@ -96,11 +105,11 @@ func ProposerWatch(args map[int][]byte, rep *Reply) {
     var ok bool
     watcherlock.Lock()
     if w, ok = watches[path]; !ok {
-        w = map[string]int{}
+        w = map[string]int64{}
         watches[path] = w
     }
-    ttl, _ := strconv.Atoi(string(args[2]))
-    w[string(args[3])] = ttl
+    ttlen, _ := strconv.Atoi(string(args[2]))
+    w[string(args[3])] = time.Now().Unix() + int64(ttlen)
     watcherlock.Unlock()
 
     //Println("args==", args, w)

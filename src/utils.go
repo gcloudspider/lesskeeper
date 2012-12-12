@@ -13,8 +13,8 @@ func checkError(err error) {
     }
 }
 
-func Println(format string, a ...interface{}) {
-    fmt.Println(format, a)
+func Println(v ...interface{}) {
+    fmt.Println(v ...)
 }
 func Sprintf(format string, a ...interface{}) string {
     return fmt.Sprintf(format, a)

@@ -7,6 +7,7 @@ import (
     "math/rand"
     "strings"
     "encoding/json"
+    "time"
 )
 
 type ActionRequst map[string]interface{}
@@ -44,11 +45,38 @@ func CommandDispatchEvent(peer *NetUDP, p *NetPacket) {
         ActionLedCast(req, ip)
 
     case "WatchEvent":
-        ActionWatchEvnet(req, ip)
+        ActionWatchEvent(req, ip)
+    case "WatchLease":
+        ActionWatchLease(req, ip)
     }
 }
 
-func ActionWatchEvnet(req ActionRequst, addr string) {
+
+func ActionWatchLease(req ActionRequst, addr string) {    
+
+    if !req.isset("path") || !req.isset("host") || !req.isset("ttl") {
+        return
+    }
+
+    path := strings.Trim(req["path"].(string), "/")
+    ttlen, _ := strconv.Atoi(req["ttl"].(string))
+    ttl := time.Now().Unix() + int64(ttlen)
+
+    watcherlock.Lock()
+    if w, ok := watches[path]; ok {
+        if i, ok := w[req["host"].(string)]; ok {
+            if ttl > i {
+                w[req["host"].(string)] = ttl
+            }
+        }
+    }
+    watcherlock.Unlock()
+
+    return
+}
+
+
+func ActionWatchEvent(req ActionRequst, addr string) {
     
     if !req.isset("path") || !req.isset("event") {
         return
@@ -56,19 +84,6 @@ func ActionWatchEvnet(req ActionRequst, addr string) {
 
     //Println("WE", req)
     agent.watchmq <- &WatcherQueue{req["path"].(string), req["event"].(string), 0}
-
-    /*if tag, ok := req["Tag"]; ok {
-        if rs, ok := req["status"]; ok {
-            if status, err := strconv.Atoi(rs.(string)); err == nil {
-                agent.Lock.Lock()
-                if c, ok := agent.clients[tag.(string)]; ok {
-                    c.Sig <- status
-                }
-                //fmt.Println("ActionAgentItemPutCb", status)
-                agent.Lock.Unlock()
-            }
-        }
-    }*/
 }
 
 func ActionNodeCast(req ActionRequst, addr string) {
