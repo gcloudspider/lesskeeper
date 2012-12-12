@@ -1,10 +1,10 @@
 package main
 
 import (
-    "fmt"
-    "os"
-    "io"
     "crypto/rand"
+    "fmt"
+    "io"
+    "os"
 )
 
 func checkError(err error) {
@@ -14,7 +14,7 @@ func checkError(err error) {
 }
 
 func Println(v ...interface{}) {
-    fmt.Println(v ...)
+    fmt.Println(v...)
 }
 func Sprintf(format string, a ...interface{}) string {
     return fmt.Sprintf(format, a)
@@ -22,8 +22,8 @@ func Sprintf(format string, a ...interface{}) string {
 
 func NewRandString(len int) string {
 
-    u := make([]byte, len / 2)
-    
+    u := make([]byte, len/2)
+
     // Reader is a global, shared instance of a cryptographically strong pseudo-random generator. 
     // On Unix-like systems, Reader reads from /dev/urandom. 
     // On Windows systems, Reader uses the CryptGenRandom API.
@@ -37,9 +37,9 @@ func NewRandString(len int) string {
 
 // NewUUID generates a new UUID based on version 4.
 func NewUUID() string {
-    
+
     u := make([]byte, 16)
-    
+
     // Reader is a global, shared instance of a cryptographically strong pseudo-random generator. 
     // On Unix-like systems, Reader reads from /dev/urandom. 
     // On Windows systems, Reader uses the CryptGenRandom API.
@@ -56,4 +56,3 @@ func NewUUID() string {
 
     return fmt.Sprintf("%x-%x-%x-%x-%x", u[0:4], u[4:6], u[6:8], u[8:10], u[10:])
 }
-

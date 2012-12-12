@@ -1,39 +1,37 @@
-
 package main
 
 import (
     //"regexp"
-    "strings"
     "strconv"
+    "strings"
 )
 
 const (
-    
-    NodePathPat     = `[a-zA-Z0-9.\-\/]`
+    NodePathPat = `[a-zA-Z0-9.\-\/]`
 
-    NodeSepFile     = "x"
-    NodeSepDir      = "d"
-    NodeSepTmp      = "t"
-    
-    INodeFile       = "in"+ NodeSepFile +":"
-    INodeDir        = "in"+ NodeSepDir +":"
+    NodeSepFile = "x"
+    NodeSepDir  = "d"
+    NodeSepTmp  = "t"
 
-    NodeNil         = uint64(1)
-    NodeDir         = uint64(2)
+    INodeFile = "in" + NodeSepFile + ":"
+    INodeDir  = "in" + NodeSepDir + ":"
 
-    NodeEventNone               = "10"
-    NodeEventCreated            = "11"
-    NodeEventDeleted            = "12"
-    NodeEventDataChanged        = "13"
-    NodeEventChildrenChanged    = "14"
+    NodeNil = uint64(1)
+    NodeDir = uint64(2)
+
+    NodeEventNone            = "10"
+    NodeEventCreated         = "11"
+    NodeEventDeleted         = "12"
+    NodeEventDataChanged     = "13"
+    NodeEventChildrenChanged = "14"
 )
 
 //var pathRe = mustBuildRe(NodePathPat)
 
 type Node struct {
-    P   string  // Path
-    C   string  // Content
-    R   uint64  // Revison (100 ~ n)
+    P string // Path
+    C string // Content
+    R uint64 // Revison (100 ~ n)
 
     // TODO U   uint16  // uid
     // TODO G   uint16  // gid
@@ -68,29 +66,29 @@ func join(parts []string, p string) string {
 func NodeSet(pl *Proposal) uint16 {
 
     // Saving File
-    in  := strings.Trim(pl.Key, "/")
+    in := strings.Trim(pl.Key, "/")
     item := map[string]string{
         "v": pl.Val,
         "r": strconv.FormatUint(pl.VerSet, 10),
     }
-    db.Hmset(INodeFile + in, item)
+    db.Hmset(INodeFile+in, item)
 
     // Saving DIRs
     p := split(in, "/")
     for i := len(p) - 1; i >= 0; i-- {
         in = join(p[0:i], "/")
-        if i == len(p) - 1 {
-            db.Sadd(INodeDir + in, NodeSepFile + p[i])
+        if i == len(p)-1 {
+            db.Sadd(INodeDir+in, NodeSepFile+p[i])
         } else {
-            db.Sadd(INodeDir + in, NodeSepDir + p[i])
+            db.Sadd(INodeDir+in, NodeSepDir+p[i])
         }
     }
-    
+
     return 0
 }
 
 func NodeGet(path string) (*Node, error) {
-    
+
     in := strings.Trim(path, "/")
 
     item, e := db.Hgetall(INodeFile + in)
@@ -98,7 +96,7 @@ func NodeGet(path string) (*Node, error) {
         return nil, e
     }
 
-    node := new(Node)    
+    node := new(Node)
     for k, v := range item {
         switch k {
         case "v":

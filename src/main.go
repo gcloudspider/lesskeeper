@@ -2,11 +2,11 @@ package main
 
 import (
     "fmt"
-	"time"
     "math/rand"
-    "runtime"
-    "net/rpc"
     "net/http"
+    "net/rpc"
+    "runtime"
+    "time"
 )
 
 // TODO read
@@ -33,10 +33,10 @@ var kp = map[string]string{}
 func main() {
 
     start := time.Now()
-    
+
     // Environment variable initialization
     runtime.GOMAXPROCS(runtime.NumCPU())
-    rand.Seed(time.Now().UnixNano())    
+    rand.Seed(time.Now().UnixNano())
 
     /** v2/ */
     db.Initialize()
@@ -47,29 +47,27 @@ func main() {
     peer = NewUDPInstance()
     peer.ListenAndServe(port, CommandDispatchEvent)
 
-
     /** /v2 */
 
     agent = NewAgent(agentPort)
-
 
     WatcherInitialize()
     // 
     gnet = NewTCPInstance()
     if err := gnet.Listen(gport); err != nil {
-            // TODO
+        // TODO
     }
-    
+
     pp := new(Proposer)
     rpc.Register(pp)
-    
+
     //rpc.HandleHTTP()
 
     at := new(Acceptor)
     rpc.Register(at)
-    
+
     rpc.HandleHTTP()
-   
+
     go http.Serve(gnet.ln, nil)
 
     // go client-cronjob

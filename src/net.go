@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -22,22 +21,21 @@ type NetPacket struct {
 type NetUDPEventHandler func(*NetUDP, *NetPacket)
 
 type NetUDP struct {
+    sock *net.UDPConn
 
-    sock    *net.UDPConn
-    
-    in      chan *NetPacket
-    out     chan *NetPacket
+    in  chan *NetPacket
+    out chan *NetPacket
 
     // Handle incoming packets read from the socket
     handlers []NetUDPEventHandler
 }
 
 func NewUDPInstance() *NetUDP {
-    
+
     p := new(NetUDP)
 
-    p.in    = make(chan *NetPacket, 100000)
-    p.out   = make(chan *NetPacket, 100000)
+    p.in = make(chan *NetPacket, 100000)
+    p.out = make(chan *NetPacket, 100000)
 
     p.handlers = make([]NetUDPEventHandler, 0, 4)
 
@@ -50,10 +48,10 @@ func (this *NetUDP) AddHandler(f NetUDPEventHandler) {
 }
 
 func (this *NetUDP) ListenAndServe(port string, f NetUDPEventHandler) (err error) {
-    
+
     var addr *net.UDPAddr
-    
-    if addr, err = net.ResolveUDPAddr("ud4", ":"+ port); err != nil {
+
+    if addr, err = net.ResolveUDPAddr("ud4", ":"+port); err != nil {
         fmt.Println("error: ListenUDP() laddr: ", err)
         return err
     }
@@ -104,7 +102,7 @@ func (this *NetUDP) handleReceiving() {
 
         msg := make([]byte, n)
         copy(msg, buf[0:n])
-        
+
         this.in <- &NetPacket{addr.String(), msg}
     }
 }
@@ -114,11 +112,11 @@ func (this *NetUDP) handleSending() {
     for p := range this.out {
 
         go func() {
-            
+
             if p == nil {
                 return
             }
-        
+
             if p.Addr == "" {
                 return
             }
@@ -136,34 +134,31 @@ func (this *NetUDP) handleSending() {
     }
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 
 type NetTCP struct {
+    ln net.Listener
 
-    ln      net.Listener
+    out chan *NetCall
 
-    out     chan *NetCall
+    pool map[string]*rpc.Client
 
-    pool    map[string]*rpc.Client
-
-    Lock    sync.Mutex    
+    Lock sync.Mutex
 }
 
 type NetCall struct {
-    
-    Method  string
-    Addr    string
+    Method string
+    Addr   string
 
-    Args    interface{}
-    Reply   interface{}
-    
+    Args  interface{}
+    Reply interface{}
+
     Status  chan uint8
     Timeout time.Duration
 }
 
 func NewNetCall() *NetCall {
-    
+
     c := new(NetCall)
     c.Status = make(chan uint8, 2)
     c.Timeout = 30e9
@@ -172,12 +167,12 @@ func NewNetCall() *NetCall {
 }
 
 func NewTCPInstance() *NetTCP {
-    
+
     this := new(NetTCP)
 
-    this.out   = make(chan *NetCall, 100000)
+    this.out = make(chan *NetCall, 100000)
 
-    this.pool  = map[string]*rpc.Client{}
+    this.pool = map[string]*rpc.Client{}
 
     go this.sending()
 
@@ -186,7 +181,7 @@ func NewTCPInstance() *NetTCP {
 
 func (this *NetTCP) Listen(port string) (err error) {
 
-    this.ln, err = net.Listen("tcp", ":"+ port)
+    this.ln, err = net.Listen("tcp", ":"+port)
     if err != nil {
         fmt.Println("listen error:", err)
     }
@@ -203,7 +198,7 @@ func (this *NetTCP) sending() {
     var err error
 
     for p := range this.out {
-        
+
         var sock *rpc.Client
 
         if sock = this.pool[p.Addr]; sock == nil {
@@ -220,9 +215,9 @@ func (this *NetTCP) sending() {
 
             select {
 
-            case <- rs.Done:
+            case <-rs.Done:
                 p.Status <- 1
-            case <- time.After(p.Timeout):
+            case <-time.After(p.Timeout):
                 p.Status <- 9
             }
 

@@ -1,17 +1,17 @@
-package main 
+package main
 
 import (
     "net/http"
     //"net/url"
-    "time"
     "fmt"
+    "time"
     //"io"
-    "io/ioutil"
     "bytes"
-    "strconv"
+    "io/ioutil"
     "math/rand"
     "os"
     "runtime"
+    "strconv"
     "sync"
 )
 
@@ -39,7 +39,7 @@ func main() {
         go func() {
             time.Sleep(1e9)
         }()
-        if i % 10000 == 0 {
+        if i%10000 == 0 {
             fmt.Println("go", i)
         }
     }
@@ -52,39 +52,38 @@ func main() {
     //os.Exit(0)
 
     //time.Sleep(30e9)
-    
 
     //time.Sleep(300 * time.Second)
 
     //
     /*
-    client := &http.Client{}
-    for i := 0; i < maxnum; i++ {
-        
-        body := bytes.NewBufferString("get key1\r\n")
-        req, err := http.NewRequest("PUT", "http://localhost:9529/h5keeper/api/item", body)
-        if err != nil {
-            fmt.Println("Error", err)
-        }
-        //req.Body = ioutil.NopCloser(bytes.NewBufferString("get key1\r\n"))
+       client := &http.Client{}
+       for i := 0; i < maxnum; i++ {
 
-        //req.Header.Add("User-Agent", "Our Custom User-Agent")
-        //req.Header.Add("If-None-Match", `W/"TheFileEtag"`)
-        //req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-        resp, err2 := client.Do(req)
-        if err2 != nil {
-            fmt.Println("Error", err2)
-        }
-        
-        if ret, err := ioutil.ReadAll(resp.Body); err == nil {
-            if true {
-                fmt.Println(string(ret))
-            }
-        }
+           body := bytes.NewBufferString("get key1\r\n")
+           req, err := http.NewRequest("PUT", "http://localhost:9529/h5keeper/api/item", body)
+           if err != nil {
+               fmt.Println("Error", err)
+           }
+           //req.Body = ioutil.NopCloser(bytes.NewBufferString("get key1\r\n"))
 
-        resp.Body.Close()
-    }
-    os.Exit(0)
+           //req.Header.Add("User-Agent", "Our Custom User-Agent")
+           //req.Header.Add("If-None-Match", `W/"TheFileEtag"`)
+           //req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+           resp, err2 := client.Do(req)
+           if err2 != nil {
+               fmt.Println("Error", err2)
+           }
+
+           if ret, err := ioutil.ReadAll(resp.Body); err == nil {
+               if true {
+                   fmt.Println(string(ret))
+               }
+           }
+
+           resp.Body.Close()
+       }
+       os.Exit(0)
     */
 
     for {
@@ -115,7 +114,7 @@ func main() {
             fmt.Println(body, vs)
         }
         //_, _ = http.PostForm("http://localhost:9529/h5keeper/api/item", url.Values{"title": {"AAAAAAAAA"}, "content": {"BBBBB"}})
- 
+
         //time.Sleep(1e6)
     }
 
@@ -123,14 +122,14 @@ func main() {
 }
 
 func ItemBench2(t, n int) {
-    
+
     ts := strconv.Itoa(t)
 
     for i := 0; i < n; i++ {
-        
+
         is := strconv.Itoa(i)
-        
-        body := bytes.NewBufferString("put "+ ts +"."+ is +"\r\nValue"+ is)
+
+        body := bytes.NewBufferString("put " + ts + "." + is + "\r\nValue" + is)
         resp, err := http.Post(uriItem, "text/plain", body)
         if err != nil {
             //fmt.Println("Error", err)
@@ -139,7 +138,7 @@ func ItemBench2(t, n int) {
             l.Unlock()
             continue
         }
-        
+
         ret, err3 := ioutil.ReadAll(resp.Body)
         if err3 != nil {
             //fmt.Println("Error3", err3)
@@ -159,10 +158,10 @@ func ItemBench2(t, n int) {
             counter++
             l.Unlock()
         }
-        
-        resp.Body.Close()        
 
-        if counter % 1000 == 0 {
+        resp.Body.Close()
+
+        if counter%1000 == 0 {
             fmt.Println("OK", counter, "ERROR", counter_error)
         }
     }
@@ -181,7 +180,7 @@ func ItemBench2(t, n int) {
 
 func ItemBench(n int) {
     //fmt.Println("OK")
-    
+
     tr := &http.Transport{
         DisableKeepAlives: true,
         //MaxIdleConnsPerHost: 100,
@@ -189,11 +188,11 @@ func ItemBench(n int) {
     client := &http.Client{Transport: tr}
 
     for i := 0; i < n; i++ {
-        
+
         vi := rand.Intn(99999999)
         vs := strconv.Itoa(vi)
-        
-        body := bytes.NewBufferString("put "+ vs +"\r\nValue"+ vs)
+
+        body := bytes.NewBufferString("put " + vs + "\r\nValue" + vs)
         //body := bytes.NewBufferString("get key1\r\n")
 
         req, err := http.NewRequest("PUT", uriItem, body)
@@ -209,16 +208,16 @@ func ItemBench(n int) {
             fmt.Println("Error2", err2)
             continue
         }
-        
-        /* ret, err3 := ioutil.ReadAll(resp.Body)
-        if err != nil {
-            fmt.Println("Error3", err3)
-            continue
-        }
 
-        if false {
-            fmt.Println(string(ret))
-        }*/
+        /* ret, err3 := ioutil.ReadAll(resp.Body)
+           if err != nil {
+               fmt.Println("Error3", err3)
+               continue
+           }
+
+           if false {
+               fmt.Println(string(ret))
+           }*/
 
         resp.Body.Close()
 

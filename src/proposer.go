@@ -2,24 +2,24 @@ package main
 
 import (
     "strconv"
+    "strings"
     "sync"
     "time"
-    "strings"
 )
 
 type Proposer int
 
 type Proposal struct {
-    Key     string
-    Val     string
+    Key string
+    Val string
 
-    VerNow  uint64
-    VerSet  uint64
-    
-    Tag     string
-    Addr    string
+    VerNow uint64
+    VerSet uint64
 
-    Valued  int
+    Tag  string
+    Addr string
+
+    Valued   int
     Unvalued int
 }
 
@@ -30,15 +30,16 @@ type ProposalPromise struct {
 var proposals = map[uint64]*Proposal{}
 var proposal_servlock sync.Mutex
 
-type ProposalWatcher map[string]int64   // map[host]ttl
+type ProposalWatcher map[string]int64 // map[host]ttl
 
 var watcherlock sync.Mutex
-var watches     = map[string]ProposalWatcher{}  // map[path]*
-var watchmq     = make(chan *WatcherQueue, 100000)
+var watches = map[string]ProposalWatcher{} // map[path]*
+var watchmq = make(chan *WatcherQueue, 100000)
+
 type WatcherQueue struct {
-    Path    string
-    Event   string
-    Rev     uint64
+    Path  string
+    Event string
+    Rev   uint64
 }
 
 func WatcherInitialize() {
@@ -62,10 +63,10 @@ func WatcherInitialize() {
                         // Println("Send to", ip +":"+ port)
                         msg := map[string]string{
                             "action": "WatchEvent",
-                            "path": q.Path,
-                            "event": q.Event,
+                            "path":   q.Path,
+                            "event":  q.Event,
                         }
-                        peer.Send(msg, ip +":"+ port)
+                        peer.Send(msg, ip+":"+port)
                     }
                 }
             }
@@ -87,7 +88,7 @@ func (p *Proposer) Process(args map[int][]byte, rep *Reply) error {
     case "WATCH":
         ProposerWatch(args, rep)
     }
-    
+
     return nil
 }
 
@@ -131,7 +132,7 @@ func ProposerGet(args map[int][]byte, rep *Reply) {
 
     if node, e := NodeGet(path); e == nil {
         rep.Type = ReplyString
-        rep.Val  = node.C
+        rep.Val = node.C
     }
 
     return
@@ -164,8 +165,8 @@ func ProposerSet(args map[int][]byte, rep *Reply) {
         nodeEvent = NodeEventCreated
     }
 
-    n , _ := db.Incrby("ctl:ltid", 1)
-    vernewi := len(kps) * n + kpsNum - 1
+    n, _ := db.Incrby("ctl:ltid", 1)
+    vernewi := len(kps)*n + kpsNum - 1
     verset := uint64(vernewi)
     //vernews := strconv.Itoa(vernewi)
 
@@ -174,8 +175,8 @@ func ProposerSet(args map[int][]byte, rep *Reply) {
     pl.Val = string(args[2])
     pl.VerNow = node.R
     pl.VerSet = verset
-    pl.Valued    = 0
-    pl.Unvalued  = 0   
+    pl.Valued = 0
+    pl.Unvalued = 0
 
     proposals[verset] = pl
     //fmt.Println("PUT Acceptor.Prepare", pl)
@@ -188,20 +189,20 @@ func ProposerSet(args map[int][]byte, rep *Reply) {
 
     // Acceptor.Prepare
     for _, v := range kp {
-        
+
         go func() {
-            
+
             call := NewNetCall()
-    
+
             call.Method = "Acceptor.Prepare"
             call.Args = pl
             call.Reply = new(ProposalPromise)
-            call.Addr = v +":"+ gport
-            
+            call.Addr = v + ":" + gport
+
             gnet.Call(call)
 
-            _ = <- call.Status
-            
+            _ = <-call.Status
+
             rs := call.Reply.(*ProposalPromise)
             if rs.VerNow == pl.VerNow {
                 promised <- 1
@@ -216,21 +217,23 @@ func ProposerSet(args map[int][]byte, rep *Reply) {
     valued := 0
     unvalued := 0
 
-    L: for {
+L:
+    for {
         select {
-        case s := <- promised:
+        case s := <-promised:
             if s == 1 {
                 valued++
-                if 2 * valued > len(kp) {
+                if 2*valued > len(kp) {
                     //fmt.Println("Valued")
                     break L
                 }
             } else if s == 0 {
                 unvalued++
-                if 2 * unvalued > len(kp) {
+                if 2*unvalued > len(kp) {
                     rep.Type = ReplyError
                     rep.Val = "UnValued"
-                    return                }
+                    return
+                }
             } else {
                 rep.Type = ReplyError
                 return
@@ -246,20 +249,20 @@ func ProposerSet(args map[int][]byte, rep *Reply) {
     }()
 
     for _, v := range kp {
-        
+
         go func() {
-            
+
             call := NewNetCall()
-    
+
             call.Method = "Acceptor.Accept"
             call.Args = pl
             call.Reply = new(Reply)
-            call.Addr = v +":"+ gport
-            
+            call.Addr = v + ":" + gport
+
             gnet.Call(call)
 
-            _ = <- call.Status
-            
+            _ = <-call.Status
+
             rs := call.Reply.(*Reply)
 
             //fmt.Println("Acceptor.Accept", rs)
@@ -274,22 +277,24 @@ func ProposerSet(args map[int][]byte, rep *Reply) {
     valued = 0
     unvalued = 0
 
-    A: for {
+A:
+    for {
         select {
-        case s := <- accepted:
+        case s := <-accepted:
             if s == 1 {
                 valued++
-                if 2 * valued > len(kp) {
+                if 2*valued > len(kp) {
                     rep.Type = ReplyOK
                     watchmq <- &WatcherQueue{strings.Trim(path, "/"), nodeEvent, 0}
                     break A
                 }
             } else if s == 0 {
                 unvalued++
-                if 2 * unvalued > len(kp) {
+                if 2*unvalued > len(kp) {
                     rep.Type = ReplyError
                     rep.Val = "UnValued"
-                    return                }
+                    return
+                }
             } else {
                 rep.Type = ReplyError
                 return
@@ -297,7 +302,5 @@ func ProposerSet(args map[int][]byte, rep *Reply) {
         }
     }
 
-
     return
 }
-

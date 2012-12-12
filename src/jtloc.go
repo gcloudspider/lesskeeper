@@ -1,27 +1,26 @@
-
 package main
 
 import (
+    "bytes"
     "fmt"
-    "time"
     "math/rand"
     "os/exec"
-    "bytes"
+    "time"
     //"net"
-    "strings"
     "strconv"
+    "strings"
 )
 
 var (
-    ref     = 0
-    loc     = map[string]string{}
-    kps     = map[string]string{}
-    kpls    = map[string]string{}
-    req     = map[string]string{}
-    locNode = ""
+    ref         = 0
+    loc         = map[string]string{}
+    kps         = map[string]string{}
+    kpls        = map[string]string{}
+    req         = map[string]string{}
+    locNode     = ""
     locNodeAddr = ""
-    kpsNum  = 0
-    kpsLed  = ""
+    kpsNum      = 0
+    kpsLed      = ""
 )
 
 func JobTrackerLocal() {
@@ -29,52 +28,52 @@ func JobTrackerLocal() {
     var err error
 
     for {
-        
+
         if (int(time.Now().Unix()) - ref) > 3 {
             jobTrackerLocalRefresh()
             ref = int(time.Now().Unix())
         }
-        
+
         // broadcast self-info
         msg := map[string]string{
             "action": "NodeCast",
-            "node": locNode,
+            "node":   locNode,
         }
-        
+
         kpsLed, err = db.Get("ctl:led")
         if err == nil && kpsLed != "" {
-            if addr, err := db.Hget("ls:"+ kpsLed, "addr"); err != nil {
-                peer.Send(msg, addr +":9628")
+            if addr, err := db.Hget("ls:"+kpsLed, "addr"); err != nil {
+                peer.Send(msg, addr+":9628")
             }
         } else if rand.Intn(8) == 0 {
-            peer.Send(msg, bcip +":9628")
+            peer.Send(msg, bcip+":9628")
         }
 
         // Paxos::P1a
         // try to become a leader
-        kpno, _ := kps[locNode];
+        kpno, _ := kps[locNode]
         if len(kpno) > 0 {
             kpsNum, _ = strconv.Atoi(kpno)
         }
         if len(kpsLed) == 0 && kpsNum > 0 {
-            
+
             fmt.Println("try to become new leader")
-            
+
             // Paxos::P2c
             if tid, _ := db.Get("ctl:tid"); len(tid) == 0 {
                 n, _ := db.Incrby("ctl:ltid", 1)
                 //kpnoi, _ := strconv.Atoi(kpno)
-                kpnoi := len(kps) * n + kpsNum - 1
+                kpnoi := len(kps)*n + kpsNum - 1
 
                 // One Proposal alive in rand seconds
                 db.Setex("ctl:tid", 3, strconv.Itoa(kpnoi))
                 msg = map[string]string{
-                    "action": "LedNew",
-                    "node": locNode,
-                    "ProposalNumber": strconv.Itoa(kpnoi),
+                    "action":          "LedNew",
+                    "node":            locNode,
+                    "ProposalNumber":  strconv.Itoa(kpnoi),
                     "ProposalContent": locNode,
                 }
-                peer.Send(msg, bcip +":9628")
+                peer.Send(msg, bcip+":9628")
                 //fmt.Println(n, len(kps), kpno, n)
             }
         }
@@ -82,33 +81,33 @@ func JobTrackerLocal() {
         // Leader Cast
         if kpsLed != "" && kpsLed == locNode {
 
-            n , _ := db.Incrby("ctl:ltid", 0)
+            n, _ := db.Incrby("ctl:ltid", 0)
             kpnoi, _ := strconv.Atoi(kpno)
-            kpnoi = len(kps) * n + kpnoi - 1
-            
+            kpnoi = len(kps)*n + kpnoi - 1
+
             kpsm := []string{}
-            
+
             //fmt.Println("kpslad", kpsLed, locNode, kpls)
 
             for k, v := range kpls {
-                addr, _ := db.Hget("ls:"+ v, "addr")
-                if err := db.Exists("on:"+ v); err == nil {
-                    kpsm = append(kpsm, "1,"+ k +","+ v +",1,"+ addr)
+                addr, _ := db.Hget("ls:"+v, "addr")
+                if err := db.Exists("on:" + v); err == nil {
+                    kpsm = append(kpsm, "1,"+k+","+v+",1,"+addr)
                 } else {
-                    kpsm = append(kpsm, "1,"+ k +","+ v +",0,"+ addr)
+                    kpsm = append(kpsm, "1,"+k+","+v+",0,"+addr)
                 }
             }
 
             //fmt.Println(kpsm)
 
             msg := map[string]string{
-                "action": "LedCast",
-                "node": locNode,
+                "action":      "LedCast",
+                "node":        locNode,
                 "ValueNumber": strconv.Itoa(kpnoi),
-                "kpls": strings.Join(kpsm, ";"),
+                "kpls":        strings.Join(kpsm, ";"),
             }
             //fmt.Println(msg)
-            peer.Send(msg, bcip +":9628")
+            peer.Send(msg, bcip+":9628")
         }
 
         //fmt.Println("JobTrackerLocal Checking")        
@@ -154,7 +153,7 @@ func jobTrackerLocalRefresh() {
 
         kps[v] = k
 
-        if addr, e := db.Hget("ls:"+ v, "addr"); e == nil {
+        if addr, e := db.Hget("ls:"+v, "addr"); e == nil {
             kp[v] = addr
         }
     }
@@ -168,8 +167,8 @@ func jobTrackLocalNodeID(length int) string {
 
     rs := make([]byte, length)
 
-    rs[0] = chars[rand.Intn(len(chars) - 10) + 10]
-    for i := 1; i < length; i++ { 
+    rs[0] = chars[rand.Intn(len(chars)-10)+10]
+    for i := 1; i < length; i++ {
         rs[i] = chars[rand.Intn(len(chars))]
     }
 

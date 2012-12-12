@@ -5,17 +5,17 @@ import (
     "net"
     "strconv"
     //"errors"
+    "io"
     "strings"
     "sync"
     "time"
-    "io"
 )
 
 //const MAX_QUERYBUF_LEN = 1024 * 1024    // 1GB max query buffer
-const AGENT_IOBUF_LEN       = 32
-const AGENT_INLINE_MAX_SIZE = 1024 * 64      // Max size of inline reads
-const AGENT_TIMEOUT         = 3e9
-const AGENT_QUIT            = 10
+const AGENT_IOBUF_LEN = 32
+const AGENT_INLINE_MAX_SIZE = 1024 * 64 // Max size of inline reads
+const AGENT_TIMEOUT = 3e9
+const AGENT_QUIT = 10
 
 //var watches map[string]ProposalWatcher
 
@@ -37,23 +37,23 @@ type Agent struct {
 
 type AgentClient struct {
     // lastinteraction int
-    Sig         chan int
-    Rep        *Reply
-    WatchPath   string
+    Sig       chan int
+    Rep       *Reply
+    WatchPath string
     //Ttl         int64
-    Querybuf    []byte
+    Querybuf []byte
 }
 
 func NewAgent(port string) *Agent {
-    
-    this    := new(Agent)
+
+    this := new(Agent)
     this.clients = map[string]*AgentClient{}
     this.watchmq = make(chan *WatcherQueue, 100000)
 
     go func() {
-        
+
         this.net = NewTCPInstance()
-        
+
         if err := this.net.Listen(port); err != nil {
             // TODO
         }
@@ -79,7 +79,7 @@ func NewAgent(port string) *Agent {
                     c.Rep.Val = q.Event
                 }
             }
-            this.Lock.Unlock()            
+            this.Lock.Unlock()
         }
     }()
 
@@ -89,7 +89,7 @@ func NewAgent(port string) *Agent {
 func (this *Agent) Handler(conn net.Conn) {
 
     sid := NewRandString(16)
-    
+
     c := new(AgentClient)
     c.Sig = make(chan int, 4)
     c.Rep = new(Reply)
@@ -103,20 +103,19 @@ func (this *Agent) Handler(conn net.Conn) {
 
         conn.Close()
         //conn = nil
-        
+
         this.Lock.Lock()
         delete(this.clients, sid)
         this.Lock.Unlock()
     }()
 
-    
-    multiBulkLen    := 0
-    bulkLen         := -1
-    pos             := 0
-  
+    multiBulkLen := 0
+    bulkLen := -1
+    pos := 0
+
     call := NewNetCall()
     call.Method = "Proposer.Process"
-    call.Addr = "127.0.0.1:"+gport
+    call.Addr = "127.0.0.1:" + gport
 
     argc := 0
     argv := map[int][]byte{}
@@ -124,13 +123,13 @@ func (this *Agent) Handler(conn net.Conn) {
     for {
 
         //conn.SetDeadline(time.Now().Add(60 * time.Second))
-        
+
         //c.Ttl = time.Now().Unix() + 30
         //Println("c.Ttl", c.Ttl)
 
         var buf [AGENT_IOBUF_LEN]byte
         n, err := conn.Read(buf[0:])
-        
+
         if err != nil {
             return
         }
@@ -154,7 +153,7 @@ func (this *Agent) Handler(conn net.Conn) {
 
             // Buffer should also contain \n
             if len(li[1]) < 1 || li[1][0] != 10 {
-                return  // TODO
+                return // TODO
             }
 
             // We know for sure there is a whole line since newline != NULL,
@@ -168,13 +167,13 @@ func (this *Agent) Handler(conn net.Conn) {
             }
             //
             mblen, err := strconv.Atoi(li[0][1:])
-            if err != nil || mblen > 1024 * 1024 {
+            if err != nil || mblen > 1024*1024 {
                 return // TODO "Protocol error: invalid multibulk length"
             }
 
             multiBulkLen = mblen
             pos = len(li[0]) + 2
-       
+
             // Reset all
             argc = 0
             argv = map[int][]byte{}
@@ -184,7 +183,7 @@ func (this *Agent) Handler(conn net.Conn) {
         for {
             // Read bulk length if unknown
             if bulkLen == -1 {
-                
+
                 li := strings.SplitN(string(c.Querybuf[pos:]), "\r", 2)
                 if len(li) == 1 {
                     if len(li[0]) > AGENT_INLINE_MAX_SIZE {
@@ -196,7 +195,7 @@ func (this *Agent) Handler(conn net.Conn) {
 
                 // Buffer should also contain \n
                 if len(li[1]) < 1 || li[1][0] != 10 {
-                    break  // TODO
+                    break // TODO
                 }
 
                 if c.Querybuf[pos] != []byte("$")[0] {
@@ -204,7 +203,7 @@ func (this *Agent) Handler(conn net.Conn) {
                 }
 
                 lis, err := strconv.Atoi(li[0][1:])
-                if err != nil || lis < 0 || lis > 512 * 1024 * 1024 {
+                if err != nil || lis < 0 || lis > 512*1024*1024 {
                     return // TODO "Protocol error: invalid bulk length"
                 }
 
@@ -213,15 +212,15 @@ func (this *Agent) Handler(conn net.Conn) {
             }
 
             /* Read bulk argument */
-            if n - pos < bulkLen + 2 {
+            if n-pos < bulkLen+2 {
                 // Not enough data (+2 == trailing \r\n)
                 break
             } else {
-                
-                argv[argc] = c.Querybuf[pos:pos+bulkLen]
+
+                argv[argc] = c.Querybuf[pos : pos+bulkLen]
                 argc++
 
-                pos     += bulkLen + 2
+                pos += bulkLen + 2
                 bulkLen = -1
                 multiBulkLen--
             }
@@ -252,12 +251,12 @@ func (this *Agent) Handler(conn net.Conn) {
             // Append command object to RPC Queue
             call.Args = argv
             call.Reply = new(Reply)
-            
+
             this.net.Call(call)
 
             //fmt.Println("req", call)
 
-            st := <- call.Status            
+            st := <-call.Status
             rs := call.Reply.(*Reply)
 
             //fmt.Println("call.reply", st, rs)
@@ -274,7 +273,7 @@ func (this *Agent) Handler(conn net.Conn) {
                 case ReplyError:
                     rsp = "-ERR\r\n" // TODO
                 case ReplyString:
-                    rsp = fmt.Sprintf("$%d\r\n%s\r\n",  len(rs.Val), rs.Val)
+                    rsp = fmt.Sprintf("$%d\r\n%s\r\n", len(rs.Val), rs.Val)
                 case ReplyMulti:
                     rsp = "+OK\r\n" // TODO
                 case ReplyInteger:
@@ -287,11 +286,11 @@ func (this *Agent) Handler(conn net.Conn) {
                         t := time.Now()
                         ut := t.Unix()
                         select {
-                        case <- c.Sig:
+                        case <-c.Sig:
                             Println("Agent Watch Sig", c.Sig, "Event", c.Rep.Val)
                             rsp = fmt.Sprintf("+%s\r\n", c.Rep.Val)
                             goto RSP
-                        case <- time.After(3e9):
+                        case <-time.After(3e9):
                             // if the client closed
                             conn.SetDeadline(time.Now())
                             var buf [AGENT_IOBUF_LEN]byte
@@ -303,13 +302,13 @@ func (this *Agent) Handler(conn net.Conn) {
                             // update ttl to proposer
                             msg := map[string]string{
                                 "action": "WatchLease",
-                                "host": locNode,
-                                "path": c.WatchPath,
-                                "ttl": "6",
+                                "host":   locNode,
+                                "path":   c.WatchPath,
+                                "ttl":    "6",
                             }
                             //Println(msg)
                             if ip, ok := kp[kpsLed]; ok {
-                                peer.Send(msg, ip +":"+ port)
+                                peer.Send(msg, ip+":"+port)
                                 //Println("Send", msg)
                             }
 
@@ -325,10 +324,10 @@ func (this *Agent) Handler(conn net.Conn) {
 
             }
 
-RSP:
+        RSP:
             //Println("rsp", rsp)
             _, _ = conn.Write([]byte(rsp))
-            
+
         }
 
     }

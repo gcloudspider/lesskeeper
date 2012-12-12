@@ -1,13 +1,12 @@
-
 package main
 
 import (
     "fmt"
-    "github.com/fzzbt/radix/redis"    
+    "github.com/fzzbt/radix/redis"
 )
 
 type Kpdata struct {
-    c   *redis.Client
+    c *redis.Client
 }
 
 func (db *Kpdata) Initialize() {
@@ -22,7 +21,7 @@ func (db *Kpdata) Initialize() {
 }
 
 func (db *Kpdata) Set(key string, val string) error {
-    
+
     r := db.c.Set(key, val)
     if r.Err != nil {
         return r.Err
@@ -42,7 +41,7 @@ func (db *Kpdata) Setex(key string, ttl int, val string) error {
 }
 
 func (db *Kpdata) Get(key string) (string, error) {
-    return db.c.Get(key).Str()      
+    return db.c.Get(key).Str()
 }
 
 func (db *Kpdata) Keys(key string) ([]string, error) {

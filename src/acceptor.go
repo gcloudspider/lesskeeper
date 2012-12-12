@@ -9,10 +9,10 @@ import (
 type Acceptor int
 
 var promiselock sync.Mutex
-var promises    = map[string]*ProposalPromise{}
+var promises = map[string]*ProposalPromise{}
 
 func (p *Acceptor) Prepare(args *Proposal, rep *ProposalPromise) error {
-    
+
     //Println("Acceptor/Prepare", args)
 
     if locNode == "" || kpsNum == 0 || kpsLed == "" {
@@ -31,7 +31,7 @@ func (p *Acceptor) Prepare(args *Proposal, rep *ProposalPromise) error {
 
     rep.VerNow = args.VerNow
     rep.VerSet = args.VerSet
-    
+
     n, _ := NodeGet(args.Key)
     if rep.VerNow != n.R {
         rep.VerNow = n.R
