@@ -1,0 +1,67 @@
+
+* Agent APIs
+
+    path [a~zA~Z0~9.\-\/]
+
+    - Set(path, data, rev) status
+    - Get(path) node
+        - GetContentAndStat(path) node
+    - Del(path, rev) status
+
+    - GetDir(path) list
+    - Watch(path) rev
+
+* Chubby
+    - Open()
+    - Close()
+    - GetContentsAndStat()
+    - GetStat()
+    - ReadDir()
+    - SetContents()
+    - SetACL()
+    - Delete()
+        删除没有子节点的节点。
+    - Acquire(),TryAcquire(),Release()
+        用于申请和释放锁。
+    - GetSequencer()
+        返回一个用于描述该句柄持有的锁的状态的 sequencer。
+    - SetSequencer() 
+        将一个 sequencer 与一个句柄关联。
+        如果 sequencer 已经失效,那么在该句柄上的后续操作将会失败。
+    - CheckSequencer()
+        检查一个 sequencer 是否有效(见 2.4 节)。
+
+
+* ZooKeeper
+    - String create(String path, byte[] data, List<ACL> acl, CreateMode createMode)
+    - Stat exists(String path, boolean watch)
+    - Stat exists(String path, Watcher watcher)
+    - void delete(String path, int version)
+    - List<String> getChildren(String path, boolean watch)
+    - Stat setData(String path, byte[] data, int version)
+    - byte[] getData(String path, boolean watch, Stat stat)
+    - void addAuthInfo(String scheme, byte[] auth)
+    - Stat setACL(String path, List<ACL> acl, int version)
+    
+    ACL:
+        Perms: ALL、READ、WRITE、CREATE、DELETE、ADMIN 
+        id ANYONE_ID_UNSAFE = new Id("world", "anyone"), AUTH_IDS = new Id("auth", "") 
+    
+    - List<ACL> getACL(String path, Stat stat)
+    
+* Doozer
+    - DEL   path, rev ⇒ ∅
+    - GET   path, rev ⇒ value, rev
+    - GETDIR path, rev, offset ⇒ path
+    - NOP (deprecated)
+    - REV ∅ ⇒ rev
+    - SET path, rev, value ⇒ rev
+    - WAIT path, rev ⇒ path, rev, value, flags
+    - WALK path, rev, offset ⇒ path, rev, value
+
+
+Ref
+    http://www.steve.org.uk/Software/redisfs/
+    http://my.oschina.net/juliashine/blog/88173
+
+

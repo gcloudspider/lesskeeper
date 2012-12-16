@@ -1,27 +1,60 @@
 
+----TODO------------------------------------------------------------------------
+inode:get/set/del {
+    22,23,24,25
+
+    Set:    /ls/app/config  "ABC"
+        Promise
+            R == NodeDir (NOP)
+        Accept
+            IF /ls/app/ == NodeNil
+                Sadd /ls/app/ members
+                IF /ls/ == NodeNil
+                    Sadd /ls/ members
+            inode:{path} hset
+}
+
+watch {
+    return & free connection
+}
+
+api.php {
+    ... JSON?
+}
+
+----Architecture----------------------------------------------------------------
+
+/---------Client---------\                    /---------Server----------\
+
+APIs <=> telnet <=> Agent <--- PRC/UDP ---> Proposer <== RPC/UDP ==> Acceptor
+                      ^                        ^                        ^
+                      |                        |                        |
+                      v                        v                        v
+                    Redis                    Redis                    Redis
+
+----Config----------------------------------------------------------------------
+tickTime = 2000
+dataDir = ...
+dataLogDir = ...
+clientPort = 9530
+
+initLimit = 5
+syncLimit = 2
 
 
-client <=> telnet <=> Proxy <--- PRC ---> Server <== RPC ==> Server
-                      ^
-                      |
-                      v
-                    Redis
+--------------------------------------------------------------------------------
 
-
-
---------------------------------
 h5keeper
     1.0.x
         - Paxos Lease
         - Paxos item/*
         Paxos watch/*
-        Paxos grp/*     ?
         
     1.1.x
         management
     1.2.x
         API fix
-        protocol (Proxy -> RPC)
+        - protocol (Proxy -> RPC)
     1.3.x
         exception
     1.4.x

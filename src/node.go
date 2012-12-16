@@ -19,11 +19,11 @@ const (
     NodeNil = uint64(1)
     NodeDir = uint64(2)
 
-    NodeEventNone            = "10"
-    NodeEventCreated         = "11"
-    NodeEventDeleted         = "12"
-    NodeEventDataChanged     = "13"
-    NodeEventChildrenChanged = "14"
+    EventNone                = "10"
+    EventNodeCreated         = "11"
+    EventNodeDeleted         = "12"
+    EventNodeDataChanged     = "13"
+    EventNodeChildrenChanged = "14"
 )
 
 //var pathRe = mustBuildRe(NodePathPat)

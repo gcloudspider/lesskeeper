@@ -145,7 +145,7 @@ func ProposerSet(args map[int][]byte, rep *Reply) {
         return
     }
 
-    nodeEvent := NodeEventNone
+    nodeEvent := EventNone
 
     path := string(args[1])
     /* if ok, _ := regexp.MatchString("^([0-9a-zA-Z ._-]{1,64})$", path); !ok {
@@ -160,9 +160,9 @@ func ProposerSet(args map[int][]byte, rep *Reply) {
             rep.Type = ReplyOK
             return
         }
-        nodeEvent = NodeEventDataChanged
+        nodeEvent = EventNodeDataChanged
     } else {
-        nodeEvent = NodeEventCreated
+        nodeEvent = EventNodeCreated
     }
 
     n, _ := db.Incrby("ctl:ltid", 1)

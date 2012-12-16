@@ -1,6 +1,6 @@
 #!/bin/bash
 
-find . -name "*.go" |xargs cat|grep -v ^$|wc -l
+#find . -name "*.go" |xargs cat|grep -v ^$|wc -l
 
 #go fmt *.go
 #sed -i 's/\t/    /g' *.go
