@@ -4,6 +4,7 @@ import (
     //"regexp"
     "strconv"
     "strings"
+    "encoding/json"
 )
 
 const (
@@ -16,8 +17,9 @@ const (
     INodeFile = "in" + NodeSepFile + ":"
     INodeDir  = "in" + NodeSepDir + ":"
 
-    NodeNil = uint64(1)
-    NodeDir = uint64(2)
+    NodeTypeNil     = uint8(0)
+    NodeTypeDir     = uint8(1)
+    NodeTypeFile    = uint8(2)
 
     EventNone                = "10"
     EventNodeCreated         = "11"
@@ -32,10 +34,10 @@ type Node struct {
     P string // Path
     C string // Content
     R uint64 // Revison (100 ~ n)
-
     // TODO U   uint16  // uid
     // TODO G   uint16  // gid
     // TODO M   uint16  // Mode
+    T uint8  // Type
 }
 
 /*
@@ -45,7 +47,7 @@ func mustBuildRe(path string) *regexp.Regexp {
 
 func checkPath(path string) uint64 {
     if !pathRe.MatchString(path) {
-        return NodeNil
+        return NodeTypeNil
     }
 
     return 0
@@ -108,4 +110,34 @@ func NodeGet(path string) (*Node, error) {
         }
     }
     return node, nil
+}
+
+func NodeList(path string) (string, error) {
+
+    in := strings.Trim(path, "/")
+   
+    item, e := db.Smembers(INodeDir + in)
+    if e != nil {
+        return "", e
+    }
+    
+    list := []Node{}
+    for _, v := range item {
+        
+        n := Node{}
+        switch v[0:1] {
+        case NodeSepDir:
+            n.T = NodeTypeDir
+        case NodeSepFile:
+            n.T = NodeTypeFile
+        }
+        n.P = v [1:]
+        list = append(list, n)
+    }
+    //return node, nil
+    //Println(list)
+    if rs, e := json.Marshal(list); e == nil {
+        return string(rs), nil
+    }
+    return "", nil
 }

@@ -7,7 +7,11 @@ import (
     "net/rpc"
     "runtime"
     "time"
+    "os"
+    "runtime/pprof"
+    "flag"
 )
+import _ "net/http/pprof"
 
 // TODO read
 // http://www.ituring.com.cn/article/14931
@@ -30,7 +34,20 @@ var bcip = "127.0.0.1"
 
 var kp = map[string]string{}
 
+var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+
 func main() {
+
+    flag.Parse()
+    if *cpuprofile != "" {
+        f, err := os.Create(*cpuprofile)
+        if err != nil {
+            Println(err)
+        }
+        pprof.StartCPUProfile(f)
+        defer pprof.StopCPUProfile()
+    }
+
 
     start := time.Now()
 
@@ -80,6 +97,7 @@ func main() {
         //udpRequest();
         //fmt.Println(kp, kps, kpls)
         time.Sleep(3e9)
+        //pprof.StopCPUProfile()
         //runtime.GC()
     }
 }

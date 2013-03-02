@@ -85,6 +85,8 @@ func (p *Proposer) Process(args map[int][]byte, rep *Reply) error {
         ProposerGet(args, rep)
     case "SET":
         ProposerSet(args, rep)
+    case "LIST":
+        ProposerList(args, rep)
     case "WATCH":
         ProposerWatch(args, rep)
     }
@@ -114,6 +116,27 @@ func ProposerWatch(args map[int][]byte, rep *Reply) {
     watcherlock.Unlock()
 
     //Println("args==", args, w)
+    return
+}
+
+func ProposerList(args map[int][]byte, rep *Reply) {
+
+    if len(args) < 2 {
+        rep.Type = ReplyError
+        return
+    }
+
+    path := string(args[1])
+    /* if ok, _ := regexp.MatchString("^([0-9a-zA-Z ._-]{1,64})$", path); !ok {
+        rep.Type = ReplyError
+        return
+    } */
+
+    if r, e := NodeList(path); e == nil {
+        rep.Type = ReplyString
+        rep.Val = r
+    }
+
     return
 }
 

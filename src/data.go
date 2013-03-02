@@ -92,6 +92,10 @@ func (db *Kpdata) Hgetall(key string) (map[string]string, error) {
     return db.c.Hgetall(key).Hash()
 }
 
+func (db *Kpdata) Smembers(key string) ([]string, error) {
+    return db.c.Smembers(key).List()
+}
+
 func (db *Kpdata) Sadd(key string, member string) error {
     r := db.c.Sadd(key, member)
     if r.Err != nil {

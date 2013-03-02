@@ -2,8 +2,8 @@
 
 class H5keeper
 {
-	const StatusOK					= "0";
-	const StatusErr 				= "1";
+    const StatusOK                  = "0";
+    const StatusErr                 = "1";
 
     const EventNone                 = "10";
     const EventNodeCreated          = "11";

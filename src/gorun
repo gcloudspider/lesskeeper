@@ -5,6 +5,13 @@
 #go fmt *.go
 #sed -i 's/\t/    /g' *.go
 
+rm -f h5keeper
 
-go run utils.go proposer.go acceptor.go agent.go cmdaction.go reply.go data.go jtloc.go main.go net.go node.go
+go build -o h5keeper utils.go proposer.go acceptor.go agent.go cmdaction.go reply.go data.go jtloc.go main.go net.go node.go
+
+#go tool pprof h5keeper --cpuprofile=h5keeper.prof
+#go tool pprof h5keeper h5keeper.prof
+#./h5keeper --cpuprofile=h5keeper.prof
+
+./h5keeper
 
