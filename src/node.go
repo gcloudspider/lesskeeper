@@ -13,14 +13,16 @@ const (
     NodeSepFile = "x"
     NodeSepDir  = "d"
     NodeSepTmp  = "t"
+    NodeSepRev  = "n"
+    NodeSepVal  = "v"
 
-    INodeFile = "in" + NodeSepFile + ":"
-    INodeDir  = "in" + NodeSepDir + ":"
+    INodeFile   = "in" + NodeSepFile + ":"
+    INodeDir    = "in" + NodeSepDir + ":"
 
-    NodeTypeNil     = uint8(0)
-    NodeTypeDir     = uint8(1)
-    NodeTypeFile    = uint8(2)
-
+    NodeTypeNil         = uint8(0)
+    NodeTypeDir         = uint8(1)
+    NodeTypeFile        = uint8(2)
+    
     EventNone                = "10"
     EventNodeCreated         = "11"
     EventNodeDeleted         = "12"
@@ -110,6 +112,42 @@ func NodeGet(path string) (*Node, error) {
         }
     }
     return node, nil
+}
+
+func NodeGets(keys string) (string, error) {
+    
+    ks := split(keys, " ")
+    
+    list := []Node{}
+
+    for _, path := range ks {
+
+        in := strings.Trim(path, "/")
+
+        item, e := db.Hgetall(INodeFile + in)
+        if e != nil {
+            return "", e
+        }
+
+        n := Node{}
+        for k, v := range item {
+        
+            switch k {
+            case NodeSepRev:
+                //n.R = uint64(v)
+            case NodeSepVal:
+                n.C = v
+            }
+            n.T = NodeTypeFile
+            n.P = path
+            list = append(list, n)
+        }
+    }
+
+    if rs, e := json.Marshal(list); e == nil {
+        return string(rs), nil
+    }
+    return "", nil 
 }
 
 func NodeList(path string) (string, error) {
