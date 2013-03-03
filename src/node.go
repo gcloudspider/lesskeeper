@@ -140,8 +140,9 @@ func NodeGets(keys string) (string, error) {
             }
             n.T = NodeTypeFile
             n.P = path
-            list = append(list, n)
         }
+
+        list = append(list, n)
     }
 
     if rs, e := json.Marshal(list); e == nil {
