@@ -80,6 +80,8 @@ func (p *Proposer) Process(args map[int][]byte, rep *Reply) error {
         return nil
     }
 
+    Println(string(args[0]))
+    
     switch string(args[0]) {
     case "GET":
         ProposerGet(args, rep)
@@ -91,8 +93,11 @@ func (p *Proposer) Process(args map[int][]byte, rep *Reply) error {
         ProposerList(args, rep)
     case "WATCH":
         ProposerWatch(args, rep)
+    case "SELECT":
+        rep.Type = ReplyOK
     }
 
+    //Println(rep)
     return nil
 }
 

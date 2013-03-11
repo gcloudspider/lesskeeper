@@ -17,6 +17,7 @@ func (db *Kpdata) Initialize() {
     }
 
     conf := redis.DefaultConfig()
+    conf.PoolCapacity = 50
     db.c = redis.NewClient(conf)
 }
 
