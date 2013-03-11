@@ -76,6 +76,12 @@ class H5keeper
         return $responses[0];
     }
     
+    public function getChildren($path)
+    {
+        $rs = $this->__call("List", array($path));
+        return json_decode($rs, true);
+    }
+
     public function __call($name, $args)
     {
         // Build the h5keeper unified protocol command

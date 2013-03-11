@@ -2,7 +2,7 @@ package main
 
 import (
     "fmt"
-    "github.com/fzzbt/radix/redis"
+    "../deps/radix/redis"
 )
 
 type Kpdata struct {

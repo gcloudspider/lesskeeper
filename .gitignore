@@ -1,4 +1,4 @@
 *.sublime-workspace
 *.doc
-./src/h5keeper
+src/h5keeper
 
