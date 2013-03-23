@@ -23,6 +23,12 @@ var (
     kpsLed      = ""
 )
 
+type KprHost struct {
+    Id      string
+    Ip      string
+    St      string
+}
+
 func JobTrackerLocal() {
 
     var err error
@@ -42,7 +48,7 @@ func JobTrackerLocal() {
 
         kpsLed, err = db.Get("ctl:led")
         if err == nil && kpsLed != "" {
-            if addr, err := db.Hget("ls:"+kpsLed, "addr"); err != nil {
+            if addr, err := db.Hget("ls:"+kpsLed, "addr"); err == nil {
                 peer.Send(msg, addr+":9628")
             }
         } else if rand.Intn(8) == 0 {

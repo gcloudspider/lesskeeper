@@ -95,8 +95,21 @@ func ActionNodeCast(req ActionRequst, addr string) {
         "status": "1",
     }
     db.Hmset("ls:"+node.(string), set)
-
     db.Setex("on:"+node.(string), 16, "1")
+
+    // TODO
+    host := KprHost{
+        Id: node.(string),
+        Ip: addr,
+        St: "1",
+    }    
+    if b, err := json.Marshal(host); err == nil {
+        pl := &Proposal{
+            Key: "/kpr/ls/"+ node.(string),
+            Val: string(b),
+        }
+        NodeSet(pl)
+    }
 }
 
 func ActionLedNew(req ActionRequst, addr string) {
