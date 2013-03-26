@@ -10,6 +10,7 @@ import (
     "os"
     "runtime/pprof"
     "flag"
+    agt "./agent"
 )
 import _ "net/http/pprof"
 
@@ -26,6 +27,9 @@ var port = "9628"
 
 var agent *Agent
 var agentPort = "9530"
+
+var agn *agt.Agent
+var agnPort = "9531"
 
 var gport = "9538"
 var gnet *NetTCP
@@ -64,6 +68,8 @@ func main() {
     peer = NewUDPInstance()
     peer.ListenAndServe(port, CommandDispatchEvent)
 
+    agn = new(agt.Agent)
+    agn.Serve(agnPort)
     /** /v2 */
 
     agent = NewAgent(agentPort)
