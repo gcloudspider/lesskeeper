@@ -80,7 +80,7 @@ func (p *Proposer) Process(args map[int][]byte, rep *Reply) error {
         return nil
     }
 
-    Println(string(args[0]))
+    //Println(string(args[0]))
     
     switch string(args[0]) {
     case "GET":

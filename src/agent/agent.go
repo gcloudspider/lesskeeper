@@ -13,7 +13,8 @@ import (
     "../peer"
 )
 
-var pr  *peer.NetTCP
+var pr         *peer.NetTCP
+var locker      sync.Mutex
 
 type Agent struct {
     Locker      sync.Mutex
@@ -24,13 +25,14 @@ type Agent struct {
 func (this *Agent) Serve(port string) {
 
     //this.net = new(peer.NetTCP)
-    this.net = peer.NewTCPInstance()
+    //this.net = peer.NewTCPInstance()
 
     pr = peer.NewTCPInstance()
 
     go func() {
 
         http.HandleFunc("/h5keeper/api/list", ApiList)
+        http.HandleFunc("/h5keeper/api/debug", ApiDebug)
 
         s := &http.Server{
             Addr:           ":" + port,

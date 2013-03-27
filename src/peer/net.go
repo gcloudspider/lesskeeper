@@ -7,7 +7,7 @@ import (
     //"strconv"
     "encoding/json"
     //"strings"
-    "sync"
+    //"sync"
     "time"
 )
 
@@ -135,15 +135,15 @@ func (this *NetUDP) handleSending() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 type NetTCP struct {
-    ln net.Listener
+    ln          net.Listener
 
-    out chan *NetCall
-
-    pool map[string]*rpc.Client
-
-    Lock sync.Mutex
+    out         chan *NetCall
+    
+    pool        chan *rpc.Client
+    poolsize    int
 }
 
 type NetCall struct {
@@ -154,7 +154,7 @@ type NetCall struct {
     Reply interface{}
 
     Status  chan uint8
-    Timeout time.Duration
+    Timeout time.Duration    
 }
 
 func NewNetCall() *NetCall {
@@ -172,7 +172,11 @@ func NewTCPInstance() *NetTCP {
 
     this.out = make(chan *NetCall, 100000)
 
-    this.pool = map[string]*rpc.Client{}
+    this.poolsize   = 10
+    this.pool       = make(chan *rpc.Client, this.poolsize)
+    for i := 0; i < this.poolsize; i++ {
+        this.pool <- nil
+    }
 
     go this.sending()
 
@@ -198,7 +202,34 @@ func (this *NetTCP) sending() {
     var err error
 
     for p := range this.out {
+        
+        conn := <-this.pool
 
+        if conn == nil {
+            if conn, err = rpc.DialHTTP("tcp", p.Addr); err != nil {
+                time.Sleep(1e9)
+                this.pool   <- nil
+                this.out    <- p
+                continue
+            }
+        }
+
+        go func(this *NetTCP, conn *rpc.Client, p *NetCall) {
+                
+            rs := conn.Go(p.Method, p.Args, p.Reply, nil)
+
+            select {
+            case <-rs.Done:
+                p.Status <- 1
+            case <-time.After(p.Timeout):
+                p.Status <- 9
+            }
+            
+            this.pool <- conn
+
+        }(this, conn, p)
+
+        /*
         var sock *rpc.Client
 
         if sock = this.pool[p.Addr]; sock == nil {
@@ -207,20 +238,6 @@ func (this *NetTCP) sending() {
             } else {
                 this.pool[p.Addr] = sock
             }
-        }
-
-        go func() {
-
-            rs := sock.Go(p.Method, p.Args, p.Reply, nil)
-
-            select {
-
-            case <-rs.Done:
-                p.Status <- 1
-            case <-time.After(p.Timeout):
-                p.Status <- 9
-            }
-
-        }()
+        }*/
     }
 }
