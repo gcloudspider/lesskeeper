@@ -9,7 +9,7 @@ sysctl -w net.ipv4.tcp_tw_reuse=1
 sysctl -w net.ipv4.tcp_tw_recycle=1
 
 
-vim /etc/systl.conf
+vim /etc/sysctl.conf
 /sbin/sysctl -p
 
 

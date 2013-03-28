@@ -141,7 +141,7 @@ func ProposerList(args map[int][]byte, rep *Reply) {
 
     if rs, e := NodeList(path); e == nil {
         rep.Type    = ReplyString
-        rep.Val     = rs
+        rep.Body     = rs
     }
 
     return
@@ -162,7 +162,7 @@ func ProposerGet(args map[int][]byte, rep *Reply) {
 
     if node, e := NodeGet(path); e == nil {
         rep.Type    = ReplyString
-        rep.Val     = node.C
+        rep.Body     = node.C
     }
 
     return
@@ -178,7 +178,7 @@ func ProposerGets(args map[int][]byte, rep *Reply) {
     keys := string(args[1])
     if rs, e := NodeGets(keys); e == nil {
         rep.Type    = ReplyString
-        rep.Val     = rs
+        rep.Body     = rs
     }
 
     return
@@ -278,7 +278,7 @@ L:
                 unvalued++
                 if 2*unvalued > len(kp) {
                     rep.Type = ReplyError
-                    rep.Val = "UnValued"
+                    rep.Body = "UnValued"
                     return
                 }
             } else {
@@ -313,7 +313,7 @@ L:
             rs := call.Reply.(*Reply)
 
             //fmt.Println("Acceptor.Accept", rs)
-            if rs.Status == ReplyOK {
+            if rs.Type == ReplyOK {
                 accepted <- 1
             } else {
                 accepted <- 0
@@ -339,7 +339,7 @@ A:
                 unvalued++
                 if 2*unvalued > len(kp) {
                     rep.Type = ReplyError
-                    rep.Val = "UnValued"
+                    rep.Body = "UnValued"
                     return
                 }
             } else {

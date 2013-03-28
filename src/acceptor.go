@@ -55,7 +55,7 @@ func (p *Acceptor) Prepare(args *Proposal, rep *ProposalPromise) error {
 
 func (p *Acceptor) Accept(args *Proposal, rep *Reply) error {
 
-    rep.Status = ReplyError
+    rep.Type = ReplyError
 
     promiselock.Lock()
     pl, _ := promises[args.Key]
@@ -71,7 +71,7 @@ func (p *Acceptor) Accept(args *Proposal, rep *Reply) error {
         // Method Dispatch
         _ = NodeSet(args)
 
-        rep.Status = ReplyOK
+        rep.Type = ReplyOK
 
         promiselock.Lock()
         if _, ok := promises[args.Key]; ok {

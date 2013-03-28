@@ -53,7 +53,7 @@ func ApiList(w http.ResponseWriter, r *http.Request) {
     args   := map[int][]byte{}
     args[0] = []byte(strings.ToUpper(r.FormValue("func")))
     args[1] = []byte(r.FormValue("path"))
-
+    fmt.Println("server", args[0])
     call           := peer.NewNetCall()
     call.Method     = "Proposer.Process"
     call.Addr       = "127.0.0.1:9538"

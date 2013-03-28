@@ -78,7 +78,7 @@ func NewAgent(port string) *Agent {
             for _, c := range this.clients {
                 if c.WatchPath == q.Path {
                     c.Sig <- 1
-                    c.Rep.Val = q.Event
+                    c.Rep.Body = q.Event
                 }
             }
             this.Lock.Unlock()
@@ -275,7 +275,7 @@ func (this *Agent) Handler(conn net.Conn) {
                 case ReplyError:
                     rsp = "-ERR\r\n" // TODO
                 case ReplyString:
-                    rsp = fmt.Sprintf("$%d\r\n%s\r\n", len(rs.Val), rs.Val)
+                    rsp = fmt.Sprintf("$%d\r\n%s\r\n", len(rs.Body), rs.Body)
                 case ReplyMulti:
                     rsp = "+OK\r\n" // TODO
                 case ReplyInteger:
@@ -289,8 +289,8 @@ func (this *Agent) Handler(conn net.Conn) {
                         ut := t.Unix()
                         select {
                         case <-c.Sig:
-                            Println("Agent Watch Sig", c.Sig, "Event", c.Rep.Val)
-                            rsp = fmt.Sprintf("+%s\r\n", c.Rep.Val)
+                            Println("Agent Watch Sig", c.Sig, "Event", c.Rep.Body)
+                            rsp = fmt.Sprintf("+%s\r\n", c.Rep.Body)
                             goto RSP
                         case <-time.After(3e9):
                             // if the client closed
