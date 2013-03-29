@@ -140,7 +140,7 @@ func ProposerList(args map[int][]byte, rep *Reply) {
     } */
 
     if rs, e := NodeList(path); e == nil {
-        rep.Type    = ReplyString
+        rep.Type     = ReplyString
         rep.Body     = rs
     }
 
@@ -161,7 +161,7 @@ func ProposerGet(args map[int][]byte, rep *Reply) {
     } */
 
     if node, e := NodeGet(path); e == nil {
-        rep.Type    = ReplyString
+        rep.Type     = ReplyString
         rep.Body     = node.C
     }
 
@@ -177,7 +177,7 @@ func ProposerGets(args map[int][]byte, rep *Reply) {
 
     keys := string(args[1])
     if rs, e := NodeGets(keys); e == nil {
-        rep.Type    = ReplyString
+        rep.Type     = ReplyString
         rep.Body     = rs
     }
 

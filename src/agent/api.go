@@ -43,7 +43,7 @@ func ApiDebug(w http.ResponseWriter, r *http.Request) {
     //bufrw.Flush()
 }
 
-func ApiList(w http.ResponseWriter, r *http.Request) {
+func ApiGen(w http.ResponseWriter, r *http.Request) {
 
     defer func() {
         //fmt.Println("defer close")
@@ -53,7 +53,7 @@ func ApiList(w http.ResponseWriter, r *http.Request) {
     args   := map[int][]byte{}
     args[0] = []byte(strings.ToUpper(r.FormValue("func")))
     args[1] = []byte(r.FormValue("path"))
-    fmt.Println("server", args[0])
+
     call           := peer.NewNetCall()
     call.Method     = "Proposer.Process"
     call.Addr       = "127.0.0.1:9538"
@@ -121,7 +121,7 @@ func ApiList(w http.ResponseWriter, r *http.Request) {
         io.WriteString(w, string(rsjson))
     } else {
         io.WriteString(w, "{\"Status\": \"ERR\"}")
-    }  
+    }
 
     if false {
         fmt.Println("hi return")

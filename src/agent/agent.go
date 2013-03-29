@@ -31,7 +31,7 @@ func (this *Agent) Serve(port string) {
 
     go func() {
 
-        http.HandleFunc("/h5keeper/api/list", ApiList)
+        http.HandleFunc("/h5keeper/api", ApiGen)
         http.HandleFunc("/h5keeper/api/debug", ApiDebug)
 
         s := &http.Server{

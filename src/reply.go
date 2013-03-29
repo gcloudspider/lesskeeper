@@ -21,3 +21,9 @@ type Reply struct {
     Body    string
     Elems   []*Reply
 }
+
+type ReplyNode struct {
+    P       string
+    C       string
+    R       uint64
+}
