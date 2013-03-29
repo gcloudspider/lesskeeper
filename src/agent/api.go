@@ -53,6 +53,10 @@ func ApiGen(w http.ResponseWriter, r *http.Request) {
     args   := map[int][]byte{}
     args[0] = []byte(strings.ToUpper(r.FormValue("func")))
     args[1] = []byte(r.FormValue("path"))
+    if body := r.FormValue("body"); body != "" {
+        // TODO case ""
+        args[2] = []byte(body)
+    }
 
     call           := peer.NewNetCall()
     call.Method     = "Proposer.Process"

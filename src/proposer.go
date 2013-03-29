@@ -89,6 +89,9 @@ func (p *Proposer) Process(args map[int][]byte, rep *Reply) error {
         ProposerGets(args, rep)
     case "SET":
         ProposerSet(args, rep)
+    case "DEL":
+        args[2] = []byte(NodeDelFlag)
+        ProposerSet(args, rep)
     case "LIST":
         ProposerList(args, rep)
     case "WATCH":

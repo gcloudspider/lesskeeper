@@ -9,6 +9,7 @@ import (
 
 const (
     NodePathPat = `[a-zA-Z0-9.\-\/]`
+    NodeDelFlag = "ukqmv4jfxyapbeqo"
 
     NodeSepFile = "x"
     NodeSepDir  = "d"
@@ -71,6 +72,13 @@ func NodeSet(pl *Proposal) uint16 {
 
     // Saving File
     in := strings.Trim(pl.Key, "/")
+    if pl.Val == NodeDelFlag {
+        db.Hdel(INodeFile+in, "v")
+        db.Hdel(INodeFile+in, "r")
+        // TODO clean inodex
+        return 0
+    }
+
     item := map[string]string{
         "v": pl.Val,
         "r": strconv.FormatUint(pl.VerSet, 10),
