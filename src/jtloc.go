@@ -9,6 +9,7 @@ import (
     //"net"
     "strconv"
     "strings"
+    "encoding/json"
 )
 
 var (
@@ -162,6 +163,20 @@ func jobTrackerLocalRefresh() {
         if addr, e := db.Hget("ls:"+v, "addr"); e == nil {
             kp[v] = addr
         }
+    }
+
+    // TODO
+    host := KprHost{
+        Id: locNode,
+        Ip: locNodeAddr,
+        St: "1",
+    }
+    if b, err := json.Marshal(host); err == nil {
+        pl := &Proposal{
+            Key: "/kpr/local",
+            Val: string(b),
+        }
+        NodeSet(pl)
     }
 
     //fmt.Println(kps)

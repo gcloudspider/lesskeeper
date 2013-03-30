@@ -11,6 +11,7 @@ import (
     "encoding/json"
     //"time"
     "strings"
+    //"../data"
 )
 
 func ApiDebug(w http.ResponseWriter, r *http.Request) {
@@ -50,8 +51,24 @@ func ApiGen(w http.ResponseWriter, r *http.Request) {
         r.Body.Close()
     }()
 
+    var rs *peer.Reply
     args   := map[int][]byte{}
-    args[0] = []byte(strings.ToUpper(r.FormValue("func")))
+    
+    method := strings.ToUpper(r.FormValue("func"))
+    /** 
+    if method == "GETLOCAL" {
+    //fmt.Println(method)
+        if rn, err := data.NodeGet(r.FormValue("path")); err == nil {
+            rs.Body = rn.C
+            rs.Type = peer.ReplyString
+        } else {
+            rs.Type = peer.ReplyError
+        }
+
+        return
+    } */
+
+    args[0] = []byte(method)
     args[1] = []byte(r.FormValue("path"))
     if body := r.FormValue("body"); body != "" {
         // TODO case ""
@@ -69,7 +86,7 @@ func ApiGen(w http.ResponseWriter, r *http.Request) {
     st := <-call.Status
     close(call.Status)
 
-    rs := call.Reply.(*peer.Reply)
+    rs = call.Reply.(*peer.Reply)
 
     if st == 9 {
         rs.Type = peer.ReplyTimeout
@@ -116,8 +133,9 @@ func ApiGen(w http.ResponseWriter, r *http.Request) {
         }
         */
     }
+    goto RSP
 
-//RSP:
+RSP:
     w.Header().Add("Connection", "close")
 
     if rsjson, err := json.Marshal(rs); err == nil {
