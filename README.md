@@ -1,5 +1,5 @@
 
-**Being developed, please do not used in the production**
+**THIS IS A DEVELOPMENT PREVIEW - DO NOT USE IT IN PRODUCTION!**
 
 ## What is Hooto Keeper ?
  * High reliable distributed coordination service
