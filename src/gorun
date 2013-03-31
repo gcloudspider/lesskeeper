@@ -1,6 +1,13 @@
 #!/bin/bash
 
-#find . -name "*.go" |xargs cat|grep -v ^$|wc -l
+echo "DIRs"
+find . -type d  | wc -l
+echo "FILEs"
+find . -type f  | wc -l
+echo "LINEs"
+find . -name "*.go" |xargs cat|grep -v ^$|wc -l
+echo "DETAILs"
+find . -type f -name "*.go" | xargs wc -l | sort -n
 
 #go fmt *.go
 #sed -i 's/\t/    /g' *.go
