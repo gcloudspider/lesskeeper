@@ -7,9 +7,9 @@ import (
     "os/exec"
     "time"
     //"net"
+    "encoding/json"
     "strconv"
     "strings"
-    "encoding/json"
 )
 
 var (
@@ -25,9 +25,9 @@ var (
 )
 
 type KprHost struct {
-    Id      string
-    Ip      string
-    St      string
+    Id string
+    Ip string
+    St string
 }
 
 func JobTrackerLocal() {

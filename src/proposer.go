@@ -81,7 +81,7 @@ func (p *Proposer) Process(args map[int][]byte, rep *Reply) error {
     }
 
     //Println(string(args[0]))
-    
+
     switch string(args[0]) {
     case "GET":
         ProposerGet(args, rep)
@@ -143,8 +143,8 @@ func ProposerList(args map[int][]byte, rep *Reply) {
     } */
 
     if rs, e := NodeList(path); e == nil {
-        rep.Type     = ReplyString
-        rep.Body     = rs
+        rep.Type = ReplyString
+        rep.Body = rs
     }
 
     return
@@ -164,8 +164,8 @@ func ProposerGet(args map[int][]byte, rep *Reply) {
     } */
 
     if node, e := NodeGet(path); e == nil {
-        rep.Type     = ReplyString
-        rep.Body     = node.C
+        rep.Type = ReplyString
+        rep.Body = node.C
     }
 
     return
@@ -180,13 +180,12 @@ func ProposerGets(args map[int][]byte, rep *Reply) {
 
     keys := string(args[1])
     if rs, e := NodeGets(keys); e == nil {
-        rep.Type     = ReplyString
-        rep.Body     = rs
+        rep.Type = ReplyString
+        rep.Body = rs
     }
 
     return
 }
-
 
 func ProposerSet(args map[int][]byte, rep *Reply) {
 

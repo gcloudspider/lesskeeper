@@ -2,9 +2,9 @@ package main
 
 import (
     //"regexp"
+    "encoding/json"
     "strconv"
     "strings"
-    "encoding/json"
 )
 
 const (
@@ -17,13 +17,13 @@ const (
     NodeSepRev  = "n"
     NodeSepVal  = "v"
 
-    INodeFile   = "in" + NodeSepFile + ":"
-    INodeDir    = "in" + NodeSepDir + ":"
+    INodeFile = "in" + NodeSepFile + ":"
+    INodeDir  = "in" + NodeSepDir + ":"
 
-    NodeTypeNil         = uint8(0)
-    NodeTypeDir         = uint8(1)
-    NodeTypeFile        = uint8(2)
-    
+    NodeTypeNil  = uint8(0)
+    NodeTypeDir  = uint8(1)
+    NodeTypeFile = uint8(2)
+
     EventNone                = "10"
     EventNodeCreated         = "11"
     EventNodeDeleted         = "12"
@@ -40,7 +40,7 @@ type Node struct {
     // TODO U   uint16  // uid
     // TODO G   uint16  // gid
     // TODO M   uint16  // Mode
-    T uint8  // Type
+    T uint8 // Type
 }
 
 /*
@@ -123,9 +123,9 @@ func NodeGet(path string) (*Node, error) {
 }
 
 func NodeGets(keys string) (string, error) {
-    
+
     ks := split(keys, " ")
-    
+
     list := []Node{}
 
     for _, path := range ks {
@@ -139,7 +139,7 @@ func NodeGets(keys string) (string, error) {
 
         n := Node{}
         for k, v := range item {
-        
+
             switch k {
             case NodeSepRev:
                 //n.R = uint64(v)
@@ -156,21 +156,21 @@ func NodeGets(keys string) (string, error) {
     if rs, e := json.Marshal(list); e == nil {
         return string(rs), nil
     }
-    return "", nil 
+    return "", nil
 }
 
 func NodeList(path string) (string, error) {
 
     in := strings.Trim(path, "/")
-   
+
     item, e := db.Smembers(INodeDir + in)
     if e != nil {
         return "", e
     }
-    
+
     list := []Node{}
     for _, v := range item {
-        
+
         n := Node{}
         switch v[0:1] {
         case NodeSepDir:
@@ -178,7 +178,7 @@ func NodeList(path string) (string, error) {
         case NodeSepFile:
             n.T = NodeTypeFile
         }
-        n.P = v [1:]
+        n.P = v[1:]
         list = append(list, n)
     }
     //return node, nil

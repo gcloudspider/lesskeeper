@@ -102,10 +102,10 @@ func ActionNodeCast(req ActionRequst, addr string) {
         Id: node.(string),
         Ip: addr,
         St: "1",
-    }    
+    }
     if b, err := json.Marshal(host); err == nil {
         pl := &Proposal{
-            Key: "/kpr/ls/"+ node.(string),
+            Key: "/kpr/ls/" + node.(string),
             Val: string(b),
         }
         NodeSet(pl)

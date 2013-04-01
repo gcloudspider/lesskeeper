@@ -1,16 +1,16 @@
 package main
 
 import (
+    agt "./agent"
+    "flag"
     "fmt"
     "math/rand"
     "net/http"
     "net/rpc"
-    "runtime"
-    "time"
     "os"
+    "runtime"
     "runtime/pprof"
-    "flag"
-    agt "./agent"
+    "time"
 )
 import _ "net/http/pprof"
 
@@ -51,7 +51,6 @@ func main() {
         pprof.StartCPUProfile(f)
         defer pprof.StopCPUProfile()
     }
-
 
     start := time.Now()
 

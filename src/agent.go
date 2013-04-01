@@ -11,8 +11,6 @@ import (
     "time"
 )
 
-
-
 //const MAX_QUERYBUF_LEN = 1024 * 1024    // 1GB max query buffer
 const AGENT_IOBUF_LEN = 32
 const AGENT_INLINE_MAX_SIZE = 1024 * 64 // Max size of inline reads
