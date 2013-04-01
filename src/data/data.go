@@ -1,8 +1,8 @@
 package data
 
 import (
-    "fmt"
     "../../deps/radix/redis"
+    "fmt"
 )
 
 type Kpdata struct {

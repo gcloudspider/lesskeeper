@@ -7,19 +7,19 @@ import (
     //"errors"
     //"io"
     //"strings"
+    "../peer"
+    "net/http"
     "sync"
     "time"
-    "net/http"
-    "../peer"
     //"../data"
 )
 
-var pr         *peer.NetTCP
-var locker      sync.Mutex
+var pr *peer.NetTCP
+var locker sync.Mutex
 
 type Agent struct {
-    Locker      sync.Mutex
-    net         *peer.NetTCP
+    Locker sync.Mutex
+    net    *peer.NetTCP
 }
 
 // API V2
