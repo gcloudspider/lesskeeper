@@ -24,8 +24,8 @@ func NewRandString(len int) string {
 
     u := make([]byte, len/2)
 
-    // Reader is a global, shared instance of a cryptographically strong pseudo-random generator. 
-    // On Unix-like systems, Reader reads from /dev/urandom. 
+    // Reader is a global, shared instance of a cryptographically strong pseudo-random generator.
+    // On Unix-like systems, Reader reads from /dev/urandom.
     // On Windows systems, Reader uses the CryptGenRandom API.
     _, err := io.ReadFull(rand.Reader, u)
     if err != nil {
@@ -40,8 +40,8 @@ func NewUUID() string {
 
     u := make([]byte, 16)
 
-    // Reader is a global, shared instance of a cryptographically strong pseudo-random generator. 
-    // On Unix-like systems, Reader reads from /dev/urandom. 
+    // Reader is a global, shared instance of a cryptographically strong pseudo-random generator.
+    // On Unix-like systems, Reader reads from /dev/urandom.
     // On Windows systems, Reader uses the CryptGenRandom API.
     _, err := io.ReadFull(rand.Reader, u)
     if err != nil {

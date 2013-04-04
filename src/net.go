@@ -51,7 +51,7 @@ func (this *NetUDP) ListenAndServe(port string, f NetUDPEventHandler) (err error
 
     var addr *net.UDPAddr
 
-    if addr, err = net.ResolveUDPAddr("ud4", ":"+port); err != nil {
+    if addr, err = net.ResolveUDPAddr("udp4", ":"+port); err != nil {
         fmt.Println("error: ListenUDP() laddr: ", err)
         return err
     }
@@ -121,7 +121,7 @@ func (this *NetUDP) handleSending() {
                 return
             }
 
-            addr, err := net.ResolveUDPAddr("ip4", p.Addr)
+            addr, err := net.ResolveUDPAddr("udp4", p.Addr)
             if err != nil {
                 fmt.Println("error: handleSending() invalid p.Addr")
                 return

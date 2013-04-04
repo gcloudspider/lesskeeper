@@ -54,7 +54,7 @@ func ApiGen(w http.ResponseWriter, r *http.Request) {
     args := map[int][]byte{}
 
     method := strings.ToUpper(r.FormValue("func"))
-    /** 
+    /**
       if method == "GETLOCAL" {
       //fmt.Println(method)
           if rn, err := data.NodeGet(r.FormValue("path")); err == nil {

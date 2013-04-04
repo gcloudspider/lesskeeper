@@ -86,7 +86,7 @@ func (r *Reply) List() ([]string, error) {
 }
 
 // Map returns a multi-bulk reply as a map[string]string or an error.
-// The reply type must be ReplyMulti, 
+// The reply type must be ReplyMulti,
 // it must have an even number of elements,
 // they must be in a "key value key value..." order and
 // values must all be either ReplyString or ReplyNil.

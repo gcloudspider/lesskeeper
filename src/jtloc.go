@@ -117,7 +117,7 @@ func JobTrackerLocal() {
             peer.Send(msg, bcip+":9628")
         }
 
-        //fmt.Println("JobTrackerLocal Checking")        
+        //fmt.Println("JobTrackerLocal Checking")
         time.Sleep(2e9)
     }
 }
@@ -126,7 +126,7 @@ func jobTrackerLocalRefresh() {
 
     loc, _ = db.Hgetall("ctl:loc")
 
-    // if new node then ID setting 
+    // if new node then ID setting
     if _, ok := loc["node"]; !ok {
         loc["node"] = NewRandString(10)
         db.Hset("ctl:loc", "node", loc["node"])

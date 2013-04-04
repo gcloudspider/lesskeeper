@@ -451,7 +451,7 @@ func ActionItemPutCb(req ActionRequst, addr string) {
     }
 }
 
-func ActionAgentItemPutCb(req ActionRequst, addr string) { 
+func ActionAgentItemPutCb(req ActionRequst, addr string) {
 
     if tag, ok := req["Tag"]; ok {
         if rs, ok := req["status"]; ok {

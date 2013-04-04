@@ -74,7 +74,7 @@ func main() {
     agent = NewAgent(agentPort)
 
     WatcherInitialize()
-    // 
+    //
     gnet = NewTCPInstance()
     if err := gnet.Listen(gport); err != nil {
         // TODO
