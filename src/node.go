@@ -72,10 +72,12 @@ func NodeSet(pl *Proposal) uint16 {
 
     // Saving File
     in := strings.Trim(pl.Key, "/")
+    p := split(in, "/")
+    l := len(p)
     if pl.Val == NodeDelFlag {
         db.Hdel(INodeFile+in, "v")
         db.Hdel(INodeFile+in, "r")
-        // TODO clean inodex
+        db.Srem(INodeDir+join(p[0:l-1], "/"), NodeSepFile+p[l-1])
         return 0
     }
 
@@ -86,8 +88,7 @@ func NodeSet(pl *Proposal) uint16 {
     db.Hmset(INodeFile+in, item)
 
     // Saving DIRs
-    p := split(in, "/")
-    for i := len(p) - 1; i >= 0; i-- {
+    for i := l - 1; i >= 0; i-- {
         in = join(p[0:i], "/")
         if i == len(p)-1 {
             db.Sadd(INodeDir+in, NodeSepFile+p[i])

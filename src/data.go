@@ -104,6 +104,13 @@ func (db *Kpdata) Sadd(key string, member string) error {
     }
     return nil
 }
+func (db *Kpdata) Srem(key string, member string) error {
+    r := db.c.Srem(key, member)
+    if r.Err != nil {
+        return r.Err
+    }
+    return nil
+}
 
 func (db *Kpdata) Incrby(key string, val int) (int, error) {
     return db.c.Incrby(key, val).Int()
