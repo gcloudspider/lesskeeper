@@ -1,0 +1,14 @@
+Source: h5keeper
+Section: database
+Priority: optional
+Maintainer: Eryx <evorui@gmail.com>
+Build-Depends: debhelper (>= 7.0.50)
+Version: v-x.y.z
+Standards-Version: sv-x.y.z
+#Homepage: https://github.com/eryx/h5keeper
+Package: h5keeper
+Architecture: amd64
+Depends: adduser
+Description: Distributed coordination service, similar to Google Chubby or Apache ZeeKeeper
+
+
