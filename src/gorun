@@ -11,14 +11,15 @@ find . -type f -name "*.go" | xargs wc -l | sort -n
 
 dirs=`find . -type d |xargs`
 for dir in $dirs; do
-    go fmt ${dir}/*.go
+    echo ${dir}
+#    go fmt ${dir}/*.go
 done
-find . -type f -name "*.go" |xargs sed -i 's/\t/    /g'
+#find . -type f -name "*.go" |xargs sed -i 's/\t/    /g'
 
 
 rm -f h5keeper
 
-go build -o h5keeper utils.go proposer.go acceptor.go agent.go cmdaction.go reply.go data.go jtloc.go main.go net.go node.go
+go build -ldflags "-w" -o h5keeper utils.go proposer.go acceptor.go cmdaction.go reply.go data.go jtloc.go main.go net.go node.go
 
 #go tool pprof h5keeper --cpuprofile=h5keeper.prof
 #go tool pprof h5keeper h5keeper.prof

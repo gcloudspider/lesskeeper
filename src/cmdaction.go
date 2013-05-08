@@ -80,7 +80,8 @@ func ActionWatchEvent(req ActionRequst, addr string) {
     }
 
     //Println("WE", req)
-    agent.watchmq <- &WatcherQueue{req["path"].(string), req["event"].(string), 0}
+    // ###TODO###
+    //agent.watchmq <- &WatcherQueue{req["path"].(string), req["event"].(string), 0}
 }
 
 func ActionNodeCast(req ActionRequst, addr string) {

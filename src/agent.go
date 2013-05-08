@@ -99,7 +99,7 @@ func (this *Agent) Handler(conn net.Conn) {
 
     defer func() {
 
-        Println("connection close()")
+        //Println("connection close()")
 
         conn.Close()
         //conn = nil

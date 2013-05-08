@@ -25,8 +25,8 @@ var db Kpdata
 var peer *NetUDP
 var port = "9628"
 
-var agent *Agent
-var agentPort = "9530"
+//var agent *Agent
+//var agentPort = "9530"
 
 var agn *agt.Agent
 var agnPort = "9531"
@@ -71,7 +71,7 @@ func main() {
     agn.Serve(agnPort)
     /** /v2 */
 
-    agent = NewAgent(agentPort)
+    //agent = NewAgent(agentPort)
 
     WatcherInitialize()
     //
