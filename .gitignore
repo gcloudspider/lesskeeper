@@ -1,4 +1,5 @@
 *.sublime-workspace
 *.doc
 src/h5keeper
-
+*.deb
+*.rpm

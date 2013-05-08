@@ -1,5 +1,5 @@
 Source: h5keeper
-Section: database
+Section: Applications
 Priority: optional
 Maintainer: Eryx <evorui@gmail.com>
 Build-Depends: debhelper (>= 7.0.50)

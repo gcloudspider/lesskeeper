@@ -1,0 +1,86 @@
+#!/usr/bin/php
+
+<?php
+
+$arch = trim(shell_exec("arch"));
+
+if ($arch != "x86_64") {
+    die("The architecture of the operating system does not support: $arch");
+}
+
+$basedir = realpath(__DIR__.'/../..');
+
+$cmd = "cd $basedir/deps/redis\n
+    make\n
+    cp -rp ./src/redis-server $basedir/bin/ ";
+shell_exec($cmd);
+
+$ver = file_get_contents($basedir."/src/version.go");
+if (!preg_match("/VERSION\ +string\ +\=\ +\"(.*)\"/", $ver, $mat)) {
+    die("Can not get version");
+}
+$ver = $mat[1];
+
+$cmd = "
+rm -rf /tmp/rpm-tmp*
+rm -rf /tmp/{BUILD,RPMS,SOURCES,SPECS,SRPMS,BUILDROOT}
+mkdir -p /tmp/{BUILD,RPMS,SOURCES,SPECS,SRPMS,BUILDROOT}
+
+rm -rf /tmp/SOURCES/h5keeper*
+
+mkdir -p /tmp/SOURCES/h5keeper-{$ver}/bin
+
+cp -rp $basedir/src/h5keeper /tmp/SOURCES/h5keeper-{$ver}/bin/
+cp -rp $basedir/deps/redis/src/redis-server /tmp/SOURCES/h5keeper-{$ver}/bin/
+
+cd /tmp/SOURCES
+tar zcf h5keeper-{$ver}.tar.gz h5keeper-{$ver}
+";
+shell_exec($cmd);
+
+$os = "el6";
+
+$file = "{$basedir}/misc/rhel/rpm.spec";
+$spec = file_get_contents($file);
+$rele = "1";
+$mat = array(
+    "/Name:\ +(.*?)\n/",
+    "/Version:\ +(.*?)\n/",
+    "/Release:\ +(.*?)\n/",
+    "/Source0:\ +(.*?)\n/",
+);
+$rep = array(
+    "Name: h5keeper\n",
+    "Version: {$ver}\n",
+    "Release: {$rele}\n",
+    "Source0: h5keeper-{$ver}.tar.gz\n",
+);
+$spec = preg_replace($mat, $rep, $spec);
+$spec = str_replace('%{?dist}', '', $spec);
+$spec = preg_replace("/Release:\ +(.*?)\n/", "Release: $1%{?dist}\n", $spec);
+
+$specfile = "/tmp/h5keeper-{$ver}-rpm.spec";
+file_put_contents($specfile, $spec);
+
+$cmd = "rpmbuild -ba $specfile";
+$cmd.= " --define='_tmppath /tmp'";
+$cmd.= " --define='_builddir /tmp/BUILD'";
+$cmd.= " --define='_topdir /tmp/'";
+$cmd.= " --define='dist .{$os}'";
+
+$retarr = array();
+$retint = 0;
+$retstr = exec($cmd, $retarr, $retint);
+if ($retint > 0) {
+    $_errstr = $cmd;
+    foreach ($retarr as $v) {
+        $_errstr .= "\n".$v;     
+    }
+}
+shell_exec($cmd);
+
+$cmd = "cp /tmp/RPMS/$arch/h5keeper-{$ver}* .";
+shell_exec($cmd);
+
+die();
+?>
