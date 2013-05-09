@@ -49,7 +49,14 @@ func NewConfig(prefix string) (*Config, error) {
     }
     cfg.RedisServer = redis_server
     
-    cfg.RedisOption = fmt.Sprintf("--port 0 --unixsocket /tmp/h5keeper.rdsock --dir %s/data/main.rds", prefix) 
+    redis_option := ""
+    //redis_option += "--port 5500 "
+    redis_option += "--unixsocket /tmp/h5keeper.rdsock "
+    redis_option += "--dir "+ prefix +"/data/ "
+    redis_option += "--dbfilename main.rds "
+    redis_option += "--daemonize yes"
+    
+    cfg.RedisOption = redis_option
     
     return &cfg, nil
 }

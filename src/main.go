@@ -8,10 +8,12 @@ import (
     "net/http"
     "net/rpc"
     "os"
+    "os/exec"
     "runtime"
     "runtime/pprof"
     "time"
     "./conf"
+    "strings"
 )
 import _ "net/http/pprof"
 
@@ -39,14 +41,14 @@ var bcip = "127.0.0.1"
 
 var kp = map[string]string{}
 
-var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+var flag_prof   = flag.String("flag_prof", "", "write cpu profile to file")
 var flag_prefix = flag.String("prefix", "", "the prefix folder path")
 
 func main() {
 
     flag.Parse()
-    if *cpuprofile != "" {
-        f, err := os.Create(*cpuprofile)
+    if *flag_prof != "" {
+        f, err := os.Create(*flag_prof)
         if err != nil {
             Println(err)
         }
@@ -57,15 +59,31 @@ func main() {
     //
     if *flag_prefix == "" {
         *flag_prefix = "/opt/prefix"
-    } 
+    }
     cfg, err := conf.NewConfig(*flag_prefix)
     if err != nil {
         panic(err)
     }
     fmt.Println(cfg)
     
+    //
+    args := strings.Split(cfg.RedisOption, " ")
+    fmt.Println(args)
     
-
+    //rdsv := exec.Command("/bin/sh", "-c", cfg.RedisServer +" "+ cfg.RedisOption)
+    rdsv := exec.Command(cfg.RedisServer, strings.Fields(cfg.RedisOption)...)
+    if err := rdsv.Run(); err != nil {
+        fmt.Println(err)
+        os.Exit(1)
+    }    
+    fmt.Println("OK")    
+    /* go func(rdsv *exec.Cmd) {
+        _ = rdsv.Wait()
+        fmt.Println("Redis Down!")
+        os.Exit(0)
+    }(rdsv) */
+   
+    
     start := time.Now()
 
     // Environment variable initialization

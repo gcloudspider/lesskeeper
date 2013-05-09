@@ -3,5 +3,6 @@
 src/h5keeper
 *.deb
 *.rpm
-
+*~
+data/*
 

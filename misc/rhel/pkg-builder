@@ -12,7 +12,7 @@ $basedir = realpath(__DIR__.'/../..');
 
 $cmd = "cd $basedir/deps/redis\n
     make\n
-    cp -rp ./src/redis-server $basedir/bin/ ";
+    cp -rp ./src/redis-server $basedir/bin/h5keeper-store ";
 shell_exec($cmd);
 
 $ver = file_get_contents($basedir."/src/version.go");
@@ -31,7 +31,7 @@ rm -rf /tmp/SOURCES/h5keeper*
 mkdir -p /tmp/SOURCES/h5keeper-{$ver}/bin
 
 cp -rp $basedir/src/h5keeper /tmp/SOURCES/h5keeper-{$ver}/bin/
-cp -rp $basedir/deps/redis/src/redis-server /tmp/SOURCES/h5keeper-{$ver}/bin/
+cp -rp $basedir/deps/redis/src/h5keeper-store /tmp/SOURCES/h5keeper-{$ver}/bin/
 
 cd /tmp/SOURCES
 tar zcf h5keeper-{$ver}.tar.gz h5keeper-{$ver}

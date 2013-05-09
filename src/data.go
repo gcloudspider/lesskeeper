@@ -18,6 +18,11 @@ func (db *Kpdata) Initialize() {
 
     conf := redis.DefaultConfig()
     conf.PoolCapacity = 50
+    conf.Network = "unix"
+    conf.Address = "/tmp/h5keeper.rdsock"
+    //conf.Network = "tcp"
+    //conf.Address = "127.0.0.1:6379"
+    
     db.c = redis.NewClient(conf)
 }
 
