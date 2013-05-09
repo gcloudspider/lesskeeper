@@ -11,6 +11,7 @@ import (
     "runtime"
     "runtime/pprof"
     "time"
+    "./conf"
 )
 import _ "net/http/pprof"
 
@@ -39,6 +40,7 @@ var bcip = "127.0.0.1"
 var kp = map[string]string{}
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+var flag_prefix = flag.String("prefix", "", "the prefix folder path")
 
 func main() {
 
@@ -51,6 +53,18 @@ func main() {
         pprof.StartCPUProfile(f)
         defer pprof.StopCPUProfile()
     }
+    
+    //
+    if *flag_prefix == "" {
+        *flag_prefix = "/opt/prefix"
+    } 
+    cfg, err := conf.NewConfig(*flag_prefix)
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(cfg)
+    
+    
 
     start := time.Now()
 
