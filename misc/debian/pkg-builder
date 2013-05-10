@@ -12,7 +12,7 @@ $basedir = realpath(__DIR__.'/../..');
 
 $cmd = "cd $basedir/deps/redis\n
     make\n
-    cp -rp ./src/redis-server $basedir/bin/ ";
+    cp -rp ./src/redis-server $basedir/bin/h5keeper-store ";
 shell_exec($cmd);
 
 $ver = file_get_contents($basedir."/src/version.go");
@@ -35,7 +35,7 @@ cp $basedir/misc/debian/init.d-scripts /tmp/h5keeper/etc/init.d/h5keeper
 chmod +rx /tmp/h5keeper/etc/init.d/h5keeper
 
 mkdir -p /tmp/h5keeper/opt/h5keeper/etc
-mkdir -p /tmp/h5keeper/opt/h5keeper/data
+mkdir -p /tmp/h5keeper/opt/h5keeper/var
 
 dpkg -b /tmp/h5keeper/ $basedir/h5keeper-{$ver}~lc.0_amd64.deb
 

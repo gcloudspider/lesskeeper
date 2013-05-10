@@ -4,5 +4,7 @@ src/h5keeper
 *.deb
 *.rpm
 *~
-data/*
+var/*
+deps/*
+bin/*
 

@@ -1,62 +1,74 @@
 package conf
 
 import (
-    "errors"
-    "os"
-    "io/ioutil"
     "encoding/json"
+    "errors"
     "fmt"
+    "io/ioutil"
+    "os"
+    "regexp"
+    "strings"
 )
 
-
 type Config struct {
-    AgentPort   string
-    KeeperPort  string
-    RedisServer string
-    RedisOption string
+    Prefix       string
+    AgentPort    string
+    KeeperPort   string
+    StoreServer  string
+    StoreOption  string
+    StoreNetwork string
+    StoreAddress string
 }
 
+func NewConfig(prefix string) (Config, error) {
 
-func NewConfig(prefix string) (*Config, error) {
+    var conf Config
+
+    if prefix == "" {
+        prefix = "/opt/prefix"
+    }
+    reg, _ := regexp.Compile("/+")
+    prefix = "/" + strings.Trim(reg.ReplaceAllString(prefix, "/"), "/")
 
     file := prefix + "/etc/h5keeper.json"
-    
-    fmt.Println("Loading config ("+ file +")")
 
     if _, err := os.Stat(file); err != nil && os.IsNotExist(err) {
-        return nil, errors.New("Error: The config file is not exists!")
+        return conf, errors.New("Error: config file is not exists")
     }
-    
+
     fp, err := os.Open(file)
     if err != nil {
-        return nil, errors.New("Error: Can not open")
+        return conf, errors.New(fmt.Sprintf("Error: Can not open (%s)", file))
     }
     defer fp.Close()
 
-    cfgjson, err := ioutil.ReadAll(fp)
+    confstr, err := ioutil.ReadAll(fp)
     if err != nil {
-        return nil, errors.New("Error: Can not read")
+        return conf, errors.New(fmt.Sprintf("Error: Can not read (%s)", file))
     }
-    
-    var cfg Config
-    if err = json.Unmarshal(cfgjson, &cfg); err != nil {
-        return nil, errors.New(fmt.Sprintf("Error: the config file is invalid. (%s)", err.Error()))
+
+    if err = json.Unmarshal(confstr, &conf); err != nil {
+        return conf, errors.New(fmt.Sprintf("Error: "+
+            "config file invalid. (%s)", err.Error()))
     }
-    
-    redis_server := prefix +"/bin/redis-server"
-    if _, err := os.Stat(redis_server); err != nil && os.IsNotExist(err) {
-        return nil, errors.New(fmt.Sprintf("Error: The redis-server (%s) is not exists", redis_server))
+
+    store_server := prefix + "/bin/h5keeper-store"
+    if _, err := os.Stat(store_server); err != nil && os.IsNotExist(err) {
+        return conf, errors.New(fmt.Sprintf("Error: "+
+            "h5keeper-store (%s) is not exists", store_server))
     }
-    cfg.RedisServer = redis_server
-    
-    redis_option := ""
-    //redis_option += "--port 5500 "
-    redis_option += "--unixsocket /tmp/h5keeper.rdsock "
-    redis_option += "--dir "+ prefix +"/data/ "
-    redis_option += "--dbfilename main.rds "
-    redis_option += "--daemonize yes"
-    
-    cfg.RedisOption = redis_option
-    
-    return &cfg, nil
+    conf.StoreServer = store_server
+    conf.StoreNetwork = "unix"
+    conf.StoreAddress = prefix + "/var/h5keeper.sock"
+
+    store_option := "--daemonize yes"
+    store_option += " --port 9526"
+    store_option += " --unixsocket " + conf.StoreAddress
+    store_option += " --dir " + prefix + "/var/"
+    store_option += " --dbfilename main.rdb"
+    conf.StoreOption = store_option
+
+    conf.Prefix = prefix
+
+    return conf, nil
 }

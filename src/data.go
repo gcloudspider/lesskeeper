@@ -3,25 +3,37 @@ package main
 import (
     "../deps/radix/redis"
     "fmt"
+    "./conf"
+    "os/exec"
+    "strings"
 )
 
 type Kpdata struct {
     c *redis.Client
 }
 
-func (db *Kpdata) Initialize() {
+func (db *Kpdata) Initialize(cfg conf.Config) {
 
     if db.c != nil {
         fmt.Println("db.c exists...")
         return
     }
 
+    pid, err := exec.Command("/bin/pidof", "h5keeper-store").Output()
+    if err != nil {
+        // TODO
+    }
+    if string(pid) == "" {
+        rdsv := exec.Command(cfg.StoreServer, strings.Fields(cfg.StoreOption)...)
+        if err := rdsv.Run(); err != nil {
+            fmt.Println(err)
+        }
+    }      
+
     conf := redis.DefaultConfig()
-    conf.PoolCapacity = 50
-    conf.Network = "unix"
-    conf.Address = "/tmp/h5keeper.rdsock"
-    //conf.Network = "tcp"
-    //conf.Address = "127.0.0.1:6379"
+    conf.PoolCapacity = 10
+    conf.Network = cfg.StoreNetwork
+    conf.Address = cfg.StoreAddress
     
     db.c = redis.NewClient(conf)
 }

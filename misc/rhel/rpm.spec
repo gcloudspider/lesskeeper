@@ -24,7 +24,7 @@ install -d %{buildroot}%{app_home}/etc
 
 #cp -rp ./* %{buildroot}%{app_home}/
 
-install -m 0755 -p bin/redis-server %{buildroot}%{app_home}/bin/redis-server
+install -m 0755 -p bin/h5keeper-store %{buildroot}%{app_home}/bin/h5keeper-store
 install -m 0755 -p bin/h5keeper %{buildroot}%{app_home}/bin/h5keeper
 
 %clean

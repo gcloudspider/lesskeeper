@@ -8,12 +8,12 @@ import (
     "net/http"
     "net/rpc"
     "os"
-    "os/exec"
+    //"os/exec"
     "runtime"
     "runtime/pprof"
     "time"
     "./conf"
-    "strings"
+    //"strings"
 )
 import _ "net/http/pprof"
 
@@ -41,7 +41,7 @@ var bcip = "127.0.0.1"
 
 var kp = map[string]string{}
 
-var flag_prof   = flag.String("flag_prof", "", "write cpu profile to file")
+var flag_prof   = flag.String("prof", "", "write cpu profile to file")
 var flag_prefix = flag.String("prefix", "", "the prefix folder path")
 
 func main() {
@@ -57,32 +57,11 @@ func main() {
     }
     
     //
-    if *flag_prefix == "" {
-        *flag_prefix = "/opt/prefix"
-    }
-    cfg, err := conf.NewConfig(*flag_prefix)
+    conf, err := conf.NewConfig(*flag_prefix)
     if err != nil {
-        panic(err)
-    }
-    fmt.Println(cfg)
-    
-    //
-    args := strings.Split(cfg.RedisOption, " ")
-    fmt.Println(args)
-    
-    //rdsv := exec.Command("/bin/sh", "-c", cfg.RedisServer +" "+ cfg.RedisOption)
-    rdsv := exec.Command(cfg.RedisServer, strings.Fields(cfg.RedisOption)...)
-    if err := rdsv.Run(); err != nil {
         fmt.Println(err)
         os.Exit(1)
-    }    
-    fmt.Println("OK")    
-    /* go func(rdsv *exec.Cmd) {
-        _ = rdsv.Wait()
-        fmt.Println("Redis Down!")
-        os.Exit(0)
-    }(rdsv) */
-   
+    }
     
     start := time.Now()
 
@@ -91,7 +70,7 @@ func main() {
     rand.Seed(time.Now().UnixNano())
 
     /** v2/ */
-    db.Initialize()
+    db.Initialize(conf)
 
     //peer = NewPeer(port)
     //peer.AddHandler(UDPdispatchEvent)
