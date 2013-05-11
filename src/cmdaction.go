@@ -156,7 +156,7 @@ func ActionLedNew(req ActionRequst, addr string) {
         "VerNew":        strconv.Itoa(vnumi),
         "AcceptContent": vval,
     }
-    peer.Send(msg, bcip+":"+port)
+    peer.Send(msg, bcip+":"+cfg.KeeperPort)
 }
 
 func ActionLedNewCb(req ActionRequst, addr string) {
@@ -216,7 +216,7 @@ func ActionLedNewCb(req ActionRequst, addr string) {
                 "ValueNumber":  ls[3],
                 "ValueContent": locNode,
             }
-            peer.Send(msg, ls[4]+":"+port)
+            peer.Send(msg, ls[4]+":"+cfg.KeeperPort)
             //fmt.Println("Value:", msg)
         }
         db.Expire("ctl:tid", rand.Intn(3)+1)
@@ -243,7 +243,7 @@ func ActionLedNewCb(req ActionRequst, addr string) {
                 "ProposalNumber":  strconv.Itoa(gno),
                 "ProposalContent": locNode,
             }
-            peer.Send(msg, bcip+":"+port)
+            peer.Send(msg, bcip+":"+cfg.KeeperPort)
         } else {
             db.Expire("ctl:tid", rand.Intn(3)+1)
         }
@@ -389,7 +389,7 @@ func ActionItemPut(req ActionRequst, addr string) {
     }
 
     //fmt.Println("ActionItemPut", msg)
-    peer.Send(msg, addr +":"+ port)
+    peer.Send(msg, addr +":"+ cfg.KeeperPort)
 }
 
 func ActionItemPutCb(req ActionRequst, addr string) {
@@ -448,7 +448,7 @@ func ActionItemPutCb(req ActionRequst, addr string) {
             "status": "10",// TODO strconv.Itoa(ReplyOK),
         }
         //fmt.Println("ActionItemPutCb", msg)
-        peer.Send(msg,  ipcb+":"+ port)
+        peer.Send(msg,  ipcb+":"+ cfg.KeeperPort)
     }
 }
 

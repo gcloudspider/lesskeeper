@@ -66,7 +66,7 @@ func WatcherInitialize() {
                             "path":   q.Path,
                             "event":  q.Event,
                         }
-                        peer.Send(msg, ip+":"+port)
+                        peer.Send(msg, ip+":"+cfg.KeeperPort)
                     }
                 }
             }

@@ -50,10 +50,10 @@ func JobTrackerLocal() {
         kpsLed, err = db.Get("ctl:led")
         if err == nil && kpsLed != "" {
             if addr, err := db.Hget("ls:"+kpsLed, "addr"); err == nil {
-                peer.Send(msg, addr+":9628")
+                peer.Send(msg, addr+":"+ cfg.KeeperPort)
             }
         } else if rand.Intn(8) == 0 {
-            peer.Send(msg, bcip+":9628")
+            peer.Send(msg, bcip+":"+ cfg.KeeperPort)
         }
 
         // Paxos::P1a
@@ -80,7 +80,7 @@ func JobTrackerLocal() {
                     "ProposalNumber":  strconv.Itoa(kpnoi),
                     "ProposalContent": locNode,
                 }
-                peer.Send(msg, bcip+":9628")
+                peer.Send(msg, bcip+":"+ cfg.KeeperPort)
                 //fmt.Println(n, len(kps), kpno, n)
             }
         }
@@ -114,7 +114,7 @@ func JobTrackerLocal() {
                 "kpls":        strings.Join(kpsm, ";"),
             }
             //fmt.Println(msg)
-            peer.Send(msg, bcip+":9628")
+            peer.Send(msg, bcip+":"+ cfg.KeeperPort)
         }
 
         //fmt.Println("JobTrackerLocal Checking")
@@ -148,7 +148,7 @@ func jobTrackerLocalRefresh() {
     if err := ec.Run(); err == nil {
         loc["addr"] = strings.TrimSpace(out.String())
         db.Hset("ctl:loc", "addr", loc["addr"])
-        db.Hset("ctl:loc", "port", "9628")
+        db.Hset("ctl:loc", "port", cfg.KeeperPort)
     }
 
     req["node"] = loc["node"]

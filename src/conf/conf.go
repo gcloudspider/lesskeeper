@@ -25,13 +25,12 @@ func NewConfig(prefix string) (Config, error) {
     var conf Config
 
     if prefix == "" {
-        prefix = "/opt/prefix"
+        prefix = "/opt/h5keeper"
     }
     reg, _ := regexp.Compile("/+")
-    prefix = "/" + strings.Trim(reg.ReplaceAllString(prefix, "/"), "/")
+    conf.Prefix = "/" + strings.Trim(reg.ReplaceAllString(prefix, "/"), "/")
 
-    file := prefix + "/etc/h5keeper.json"
-
+    file := conf.Prefix + "/etc/h5keeper.json"
     if _, err := os.Stat(file); err != nil && os.IsNotExist(err) {
         return conf, errors.New("Error: config file is not exists")
     }
@@ -52,23 +51,21 @@ func NewConfig(prefix string) (Config, error) {
             "config file invalid. (%s)", err.Error()))
     }
 
-    store_server := prefix + "/bin/h5keeper-store"
+    store_server := conf.Prefix + "/bin/h5keeper-store"
     if _, err := os.Stat(store_server); err != nil && os.IsNotExist(err) {
         return conf, errors.New(fmt.Sprintf("Error: "+
             "h5keeper-store (%s) is not exists", store_server))
     }
-    conf.StoreServer = store_server
+    conf.StoreServer  = store_server
     conf.StoreNetwork = "unix"
-    conf.StoreAddress = prefix + "/var/h5keeper.sock"
+    conf.StoreAddress = conf.Prefix + "/var/h5keeper.sock"
 
     store_option := "--daemonize yes"
     store_option += " --port 9526"
     store_option += " --unixsocket " + conf.StoreAddress
-    store_option += " --dir " + prefix + "/var/"
+    store_option += " --dir " + conf.Prefix + "/var/"
     store_option += " --dbfilename main.rdb"
     conf.StoreOption = store_option
-
-    conf.Prefix = prefix
 
     return conf, nil
 }
