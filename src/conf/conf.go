@@ -22,50 +22,50 @@ type Config struct {
 
 func NewConfig(prefix string) (Config, error) {
 
-    var conf Config
+    var cfg Config
 
     if prefix == "" {
         prefix = "/opt/h5keeper"
     }
     reg, _ := regexp.Compile("/+")
-    conf.Prefix = "/" + strings.Trim(reg.ReplaceAllString(prefix, "/"), "/")
+    cfg.Prefix = "/" + strings.Trim(reg.ReplaceAllString(prefix, "/"), "/")
 
-    file := conf.Prefix + "/etc/h5keeper.json"
+    file := cfg.Prefix + "/etc/h5keeper.json"
     if _, err := os.Stat(file); err != nil && os.IsNotExist(err) {
-        return conf, errors.New("Error: config file is not exists")
+        return cfg, errors.New("Error: config file is not exists")
     }
 
     fp, err := os.Open(file)
     if err != nil {
-        return conf, errors.New(fmt.Sprintf("Error: Can not open (%s)", file))
+        return cfg, errors.New(fmt.Sprintf("Error: Can not open (%s)", file))
     }
     defer fp.Close()
 
-    confstr, err := ioutil.ReadAll(fp)
+    cfgstr, err := ioutil.ReadAll(fp)
     if err != nil {
-        return conf, errors.New(fmt.Sprintf("Error: Can not read (%s)", file))
+        return cfg, errors.New(fmt.Sprintf("Error: Can not read (%s)", file))
     }
 
-    if err = json.Unmarshal(confstr, &conf); err != nil {
-        return conf, errors.New(fmt.Sprintf("Error: "+
+    if err = json.Unmarshal(cfgstr, &cfg); err != nil {
+        return cfg, errors.New(fmt.Sprintf("Error: "+
             "config file invalid. (%s)", err.Error()))
     }
 
-    store_server := conf.Prefix + "/bin/h5keeper-store"
+    store_server := cfg.Prefix + "/bin/h5keeper-store"
     if _, err := os.Stat(store_server); err != nil && os.IsNotExist(err) {
-        return conf, errors.New(fmt.Sprintf("Error: "+
+        return cfg, errors.New(fmt.Sprintf("Error: "+
             "h5keeper-store (%s) is not exists", store_server))
     }
-    conf.StoreServer  = store_server
-    conf.StoreNetwork = "unix"
-    conf.StoreAddress = conf.Prefix + "/var/h5keeper.sock"
+    cfg.StoreServer = store_server
+    cfg.StoreNetwork = "unix"
+    cfg.StoreAddress = cfg.Prefix + "/var/h5keeper.sock"
 
     store_option := "--daemonize yes"
     store_option += " --port 9526"
-    store_option += " --unixsocket " + conf.StoreAddress
-    store_option += " --dir " + conf.Prefix + "/var/"
+    store_option += " --unixsocket " + cfg.StoreAddress
+    store_option += " --dir " + cfg.Prefix + "/var/"
     store_option += " --dbfilename main.rdb"
-    conf.StoreOption = store_option
+    cfg.StoreOption = store_option
 
-    return conf, nil
+    return cfg, nil
 }

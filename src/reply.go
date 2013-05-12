@@ -23,7 +23,7 @@ type Reply struct {
 }
 
 type ReplyNode struct {
-    P string
-    C string
-    R uint64
+    P   string
+    C   string
+    R   uint64
 }

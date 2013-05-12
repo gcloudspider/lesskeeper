@@ -55,13 +55,13 @@ type Proposal struct {
 //var pathRe = mustBuildRe(NodePathPat)
 
 type Node struct {
-    P string // Path
-    C string // Content
-    R uint64 // Revison (100 ~ n)
+    P   string // Path
+    C   string // Content
+    R   uint64 // Revison (100 ~ n)
     // TODO U   uint16  // uid
     // TODO G   uint16  // gid
     // TODO M   uint16  // Mode
-    T uint8 // Type
+    T   uint8 // Type
 }
 
 /*

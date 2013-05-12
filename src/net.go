@@ -137,7 +137,7 @@ func (this *NetUDP) handleSending() {
 ////////////////////////////////////////////////////////////////////////////////
 
 type NetTCP struct {
-    ln net.Listener
+    ln  net.Listener
 
     out chan *NetCall
 

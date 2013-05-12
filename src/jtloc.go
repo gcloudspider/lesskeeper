@@ -25,9 +25,9 @@ var (
 )
 
 type KprHost struct {
-    Id string
-    Ip string
-    St string
+    Id  string
+    Ip  string
+    St  string
 }
 
 func JobTrackerLocal() {
@@ -50,10 +50,10 @@ func JobTrackerLocal() {
         kpsLed, err = db.Get("ctl:led")
         if err == nil && kpsLed != "" {
             if addr, err := db.Hget("ls:"+kpsLed, "addr"); err == nil {
-                peer.Send(msg, addr+":"+ cfg.KeeperPort)
+                peer.Send(msg, addr+":"+cfg.KeeperPort)
             }
         } else if rand.Intn(8) == 0 {
-            peer.Send(msg, bcip+":"+ cfg.KeeperPort)
+            peer.Send(msg, bcip+":"+cfg.KeeperPort)
         }
 
         // Paxos::P1a
@@ -80,7 +80,7 @@ func JobTrackerLocal() {
                     "ProposalNumber":  strconv.Itoa(kpnoi),
                     "ProposalContent": locNode,
                 }
-                peer.Send(msg, bcip+":"+ cfg.KeeperPort)
+                peer.Send(msg, bcip+":"+cfg.KeeperPort)
                 //fmt.Println(n, len(kps), kpno, n)
             }
         }
@@ -114,7 +114,7 @@ func JobTrackerLocal() {
                 "kpls":        strings.Join(kpsm, ";"),
             }
             //fmt.Println(msg)
-            peer.Send(msg, bcip+":"+ cfg.KeeperPort)
+            peer.Send(msg, bcip+":"+cfg.KeeperPort)
         }
 
         //fmt.Println("JobTrackerLocal Checking")

@@ -2,8 +2,8 @@ package main
 
 import (
     "../deps/radix/redis"
-    "fmt"
     "./conf"
+    "fmt"
     "os/exec"
     "strings"
 )
@@ -28,13 +28,13 @@ func (db *Kpdata) Initialize(cfg conf.Config) {
         if err := rdsv.Run(); err != nil {
             fmt.Println(err)
         }
-    }      
+    }
 
     conf := redis.DefaultConfig()
     conf.PoolCapacity = 10
     conf.Network = cfg.StoreNetwork
     conf.Address = cfg.StoreAddress
-    
+
     db.c = redis.NewClient(conf)
 }
 

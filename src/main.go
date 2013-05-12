@@ -2,6 +2,7 @@ package main
 
 import (
     agt "./agent"
+    "./conf"
     "flag"
     "fmt"
     "math/rand"
@@ -10,12 +11,12 @@ import (
     "os"
     "runtime"
     "time"
-    "./conf"
 )
 
 var db Kpdata
 
 var peer *NetUDP
+
 //var port = "9628"
 
 //var agent *Agent
@@ -35,16 +36,16 @@ var cfg conf.Config
 var flag_prefix = flag.String("prefix", "", "the prefix folder path")
 
 func main() {
-    
+
     start := time.Now()
-    
+
     flag.Parse()
     var err error
-    
+
     // Environment variable initialization
     runtime.GOMAXPROCS(runtime.NumCPU())
     rand.Seed(time.Now().UnixNano())
-    
+
     //
     if cfg, err = conf.NewConfig(*flag_prefix); err != nil {
         fmt.Println(err)
