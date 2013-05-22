@@ -19,8 +19,8 @@ var peer *NetUDP
 
 //var port = "9628"
 
-//var agent *Agent
-//var agentPort = "9530"
+var agent *Agent
+var agentPort = "9530"
 
 var agn *agt.Agent
 
@@ -65,7 +65,7 @@ func main() {
     agn.Serve(cfg.AgentPort)
     /** /v2 */
 
-    //agent = NewAgent(agentPort)
+    agent = NewAgent(agentPort)
 
     WatcherInitialize()
     //

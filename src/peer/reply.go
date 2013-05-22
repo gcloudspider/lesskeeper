@@ -21,10 +21,10 @@ const (
 )
 
 type Reply struct {
-    Err   error
-    Type  ReplyType
-    Body  string
-    Elems []*Reply
+    Err   error     `json:"err"`
+    Type  ReplyType `json:"type"`
+    Body  string    `json:"body"`
+    Elems []*Reply  `json:"elems"`
 }
 
 type ReplyNode struct {

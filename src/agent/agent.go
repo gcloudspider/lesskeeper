@@ -1,17 +1,11 @@
 package agent
 
 import (
-    //"fmt"
-    //"net"
-    //"strconv"
-    //"errors"
-    //"io"
-    //"strings"
     "../peer"
     "net/http"
     "sync"
     "time"
-    //"../data"
+    "../conf"
 )
 
 var pr *peer.NetTCP
@@ -20,6 +14,7 @@ var locker sync.Mutex
 type Agent struct {
     Locker sync.Mutex
     net    *peer.NetTCP
+    cfg    conf.Config
 }
 
 // API V2
@@ -33,7 +28,7 @@ func (this *Agent) Serve(port string) {
     go func() {
 
         http.HandleFunc("/h5keeper/api", ApiGen)
-        http.HandleFunc("/h5keeper/api/debug", ApiDebug)
+        http.HandleFunc("/h5keeper/apiv2", ApiV2)
 
         s := &http.Server{
             Addr:           ":" + port,

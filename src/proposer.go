@@ -5,6 +5,8 @@ import (
     "strings"
     "sync"
     "time"
+    pr "./peer"
+    "./utils"
 )
 
 type Proposer int
@@ -22,6 +24,8 @@ type Proposal struct {
     Valued   int
     Unvalued int
 }
+
+type Request pr.Request
 
 type ProposalPromise struct {
     VerNow, VerSet uint64
@@ -41,6 +45,54 @@ type WatcherQueue struct {
     Event string
     Rev   uint64
 }
+
+func (p *Proposer) Cmd(rq *Request, rp *Reply) error {
+
+    switch string(rq.Method) {
+    case "GET":
+        CmdGet(rq, rp)
+    case "LIST":
+        CmdList(rq, rp)
+    case "DEL":
+    case "SET":
+    }
+    
+    return nil
+}
+
+func CmdGet(rq *Request, rp *Reply) {
+
+    var rqbody struct {
+        Path string
+    }
+    e := utils.JsonDecode(rq.Body, &rqbody)
+    if e != nil {
+        return
+    }
+
+    if node, e := NodeGet(rqbody.Path); e == nil {
+        rp.Type = ReplyString
+        rp.Body = node.C
+    }
+}
+
+func CmdList(rq *Request, rp *Reply) {
+
+    var rqbody struct {
+        Path string
+    }
+    e := utils.JsonDecode(rq.Body, &rqbody)
+    if e != nil {
+        return
+    }
+
+    if rs, e := NodeList(rqbody.Path); e == nil {
+        rp.Type = ReplyString
+        rp.Body = rs
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 func WatcherInitialize() {
 

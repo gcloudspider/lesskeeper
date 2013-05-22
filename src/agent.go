@@ -308,7 +308,7 @@ func (this *Agent) Handler(conn net.Conn) {
                             }
                             //Println(msg)
                             if ip, ok := kp[kpsLed]; ok {
-                                peer.Send(msg, ip+":"+port)
+                                peer.Send(msg, ip+":"+cfg.KeeperPort)
                                 //Println("Send", msg)
                             }
 
