@@ -2,9 +2,9 @@ package utils
 
 import (
     "crypto/rand"
+    "encoding/json"
     "fmt"
     "io"
-    "encoding/json"
 )
 
 func JsonDecode(str string, rs interface{}) (err error) {

@@ -15,7 +15,7 @@ import (
 )
 
 func ApiGen(w http.ResponseWriter, r *http.Request) {
-   
+
     defer func() {
         //fmt.Println("defer close")
         r.Body.Close()

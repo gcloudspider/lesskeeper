@@ -1,11 +1,11 @@
 package agent
 
 import (
+    "../conf"
     "../peer"
     "net/http"
     "sync"
     "time"
-    "../conf"
 )
 
 var pr *peer.NetTCP

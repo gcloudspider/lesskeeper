@@ -1,22 +1,22 @@
 package agent
 
 import (
-    "fmt"
-    "io"
-    "net/http"
-    "io/ioutil"
     "../peer"
     "../utils"
+    "fmt"
+    "io"
+    "io/ioutil"
+    "net/http"
     "strings"
 )
 
 func ApiV2(w http.ResponseWriter, r *http.Request) {
-   
+
     var rsp *peer.Reply
 
     defer func() {
         w.Header().Add("Connection", "close")
-        
+
         if rspj, err := utils.JsonEncode(rsp); err == nil {
             io.WriteString(w, rspj)
         }
@@ -28,13 +28,14 @@ func ApiV2(w http.ResponseWriter, r *http.Request) {
     if err != nil {
         return
     }
+    fmt.Println(string(body))
 
     var req peer.Request
     err = utils.JsonDecode(string(body), &req)
     if err != nil {
         return
     }
-    
+
     req.Method = strings.ToUpper(req.Method)
     req.Body = string(body)
 
@@ -46,10 +47,12 @@ func ApiV2(w http.ResponseWriter, r *http.Request) {
 
     pr.Call(call)
 
+    // TODO timeout
     st := <-call.Status
     close(call.Status)
 
     rsp = call.Reply.(*peer.Reply)
+    fmt.Println(rsp)
 
     if st == 9 {
         rsp.Type = peer.ReplyTimeout
@@ -99,18 +102,5 @@ func ApiV2(w http.ResponseWriter, r *http.Request) {
     goto RSP
 
 RSP:
-    
-
-    /* if rsjson, err := json.Marshal(rsp); err == nil {
-        //w.Header().Add("Content-Length", string(len(rsjson)))
-        //io.WriteString(w, string(rsjson))
-    } else {
-        rsp.Err = errors.New("ERR")
-        //io.WriteString(w, "{\"Status\": \"ERR\"}")
-    } */
-
-    if false {
-        fmt.Println("hi return")
-    }
     return
 }

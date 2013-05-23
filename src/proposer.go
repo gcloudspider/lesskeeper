@@ -1,12 +1,12 @@
 package main
 
 import (
+    pr "./peer"
+    "./utils"
     "strconv"
     "strings"
     "sync"
     "time"
-    pr "./peer"
-    "./utils"
 )
 
 type Proposer int
@@ -56,7 +56,7 @@ func (p *Proposer) Cmd(rq *Request, rp *Reply) error {
     case "DEL":
     case "SET":
     }
-    
+
     return nil
 }
 
