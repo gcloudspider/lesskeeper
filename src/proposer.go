@@ -55,6 +55,7 @@ func (p *Proposer) Cmd(rq *Request, rp *Reply) error {
         CmdList(rq, rp)
     case "DEL":
     case "SET":
+        CmdSet(rq, rp)
     }
 
     return nil
@@ -89,6 +90,174 @@ func CmdList(rq *Request, rp *Reply) {
     if rs, e := NodeList(rqbody.Path); e == nil {
         rp.Type = ReplyString
         rp.Body = rs
+    }
+}
+
+func CmdSet(rq *Request, rp *Reply) {
+
+    var rqbody struct {
+        Path string
+        Val  string
+    }
+    e := utils.JsonDecode(rq.Body, &rqbody)
+    if e != nil {
+        return
+    }
+
+    nodeEvent := EventNone
+
+    /* if ok, _ := regexp.MatchString("^([0-9a-zA-Z ._-]{1,64})$", rqbody.Path); !ok {
+        rp.Type = ReplyError
+        return
+    } */
+
+    node, _ := NodeGet(rqbody.Path)
+    if node.R > 0 {
+        if node.C == rqbody.Val {
+            //Println("same node", rqbody.Path)
+            rp.Type = ReplyOK
+            return
+        }
+        nodeEvent = EventNodeDataChanged
+    } else {
+        nodeEvent = EventNodeCreated
+    }
+
+    n, _ := db.Incrby("ctl:ltid", 1)
+    vernewi := len(kps)*n + kpsNum - 1
+    verset := uint64(vernewi)
+    //vernews := strconv.Itoa(vernewi)
+
+    pl := new(Proposal)
+    pl.Key = rqbody.Path
+    pl.Val = rqbody.Val
+    pl.VerNow = node.R
+    pl.VerSet = verset
+    pl.Valued = 0
+    pl.Unvalued = 0
+
+    proposals[verset] = pl
+    //fmt.Println("PUT Acceptor.Prepare", pl)
+
+    promised := make(chan uint8, len(kp))
+    go func() {
+        time.Sleep(30e9)
+        promised <- 9
+    }()
+
+    // Acceptor.Prepare
+    for _, v := range kp {
+
+        go func() {
+
+            call := NewNetCall()
+
+            call.Method = "Acceptor.Prepare"
+            call.Args = pl
+            call.Reply = new(ProposalPromise)
+            call.Addr = v + ":" + cfg.KeeperPort
+
+            gnet.Call(call)
+
+            _ = <-call.Status
+
+            rs := call.Reply.(*ProposalPromise)
+            if rs.VerNow == pl.VerNow {
+                promised <- 1
+            } else {
+                promised <- 0
+            }
+        }()
+
+        //fmt.Println(k, v)
+    }
+
+    valued := 0
+    unvalued := 0
+
+L:
+    for {
+        select {
+        case s := <-promised:
+            if s == 1 {
+                valued++
+                if 2*valued > len(kp) {
+                    //fmt.Println("Valued")
+                    break L
+                }
+            } else if s == 0 {
+                unvalued++
+                if 2*unvalued > len(kp) {
+                    rp.Type = ReplyError
+                    rp.Body = "UnValued"
+                    return
+                }
+            } else {
+                rp.Type = ReplyError
+                return
+            }
+        }
+    }
+
+    // Acceptor.Accept
+    accepted := make(chan uint8, len(kp))
+    go func() {
+        time.Sleep(30e9)
+        accepted <- 9
+    }()
+
+    for _, v := range kp {
+
+        go func() {
+
+            call := NewNetCall()
+
+            call.Method = "Acceptor.Accept"
+            call.Args = pl
+            call.Reply = new(Reply)
+            call.Addr = v + ":" + cfg.KeeperPort
+
+            gnet.Call(call)
+
+            _ = <-call.Status
+
+            rs := call.Reply.(*Reply)
+
+            //fmt.Println("Acceptor.Accept", rs)
+            if rs.Type == ReplyOK {
+                accepted <- 1
+            } else {
+                accepted <- 0
+            }
+        }()
+    }
+
+    valued = 0
+    unvalued = 0
+
+A:
+    for {
+        select {
+        case s := <-accepted:
+            if s == 1 {
+                valued++
+                if 2*valued > len(kp) {
+                    rp.Type = ReplyOK
+                    watchmq <- &WatcherQueue{strings.Trim(rqbody.Path, "/"), nodeEvent, 0}
+                    break A
+                }
+            } else if s == 0 {
+                unvalued++
+                if 2*unvalued > len(kp) {
+                    rp.Type = ReplyError
+                    rp.Body = "UnValued"
+                    return
+                }
+            } else {
+                rp.Type = ReplyError
+                return
+            }
+        }
     }
 }
 
