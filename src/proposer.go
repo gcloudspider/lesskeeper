@@ -51,11 +51,13 @@ func (p *Proposer) Cmd(rq *Request, rp *Reply) error {
     switch string(rq.Method) {
     case "GET":
         CmdGet(rq, rp)
+    case "GETS":
+        CmdGets(rq, rp)
     case "LIST":
         CmdList(rq, rp)
-    case "DEL":
     case "SET":
         CmdSet(rq, rp)
+    case "DEL":
     }
 
     return nil
@@ -75,6 +77,24 @@ func CmdGet(rq *Request, rp *Reply) {
         rp.Type = ReplyString
         rp.Body = node.C
     }
+}
+
+func CmdGets(rq *Request, rp *Reply) {
+
+    var rqbody struct {
+        Path string
+    }
+    e := utils.JsonDecode(rq.Body, &rqbody)
+    if e != nil {
+        return
+    }
+
+    if rs, e := NodeGets(rqbody.Path); e == nil {
+        rp.Type = ReplyString
+        rp.Body = rs
+    }
+
+    return
 }
 
 func CmdList(rq *Request, rp *Reply) {
