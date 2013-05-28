@@ -2,6 +2,9 @@
 
 <?php
 
+$opt = getopt("r:");
+$rel = isset($opt['r']) ? intval($opt['r']) : '1';
+
 $arch = trim(shell_exec("arch"));
 
 if ($arch != "x86_64") {
@@ -35,9 +38,12 @@ cp $basedir/misc/debian/init.d-scripts /tmp/h5keeper/etc/init.d/h5keeper
 chmod +rx /tmp/h5keeper/etc/init.d/h5keeper
 
 mkdir -p /tmp/h5keeper/opt/h5keeper/etc
+cp $basedir/misc/redis/redis.conf /tmp/h5keeper/opt/h5keeper/etc/redis.conf
+cp $basedir/misc/h5keeper/h5keeper.json /tmp/h5keeper/opt/h5keeper/etc/h5keeper.json
+
 mkdir -p /tmp/h5keeper/opt/h5keeper/var
 
-dpkg -b /tmp/h5keeper/ $basedir/h5keeper-{$ver}~lc.0_amd64.deb
+dpkg -b /tmp/h5keeper/ $basedir/h5keeper-{$ver}~lc.{$rel}_amd64.deb
 
 rm -rf /tmp/h5keeper";
 

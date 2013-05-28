@@ -60,11 +60,13 @@ func NewConfig(prefix string) (Config, error) {
     cfg.StoreNetwork = "unix"
     cfg.StoreAddress = cfg.Prefix + "/var/h5keeper.sock"
 
-    store_option := "--daemonize yes"
+    store_option := cfg.Prefix + "/etc/redis.conf"
+    store_option += " --daemonize yes"
     store_option += " --port 9526"
     store_option += " --unixsocket " + cfg.StoreAddress
     store_option += " --dir " + cfg.Prefix + "/var/"
     store_option += " --dbfilename main.rdb"
+
     cfg.StoreOption = store_option
 
     return cfg, nil
