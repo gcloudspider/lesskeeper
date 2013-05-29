@@ -7,7 +7,7 @@
  * Open Source, lightweight implementation in Go
 
 ## Architecture
-<pre>
+<pre><code>
 /---------Client---------\                       /---------Server----------\
 
 APIs <=> http/json <=> Agent <--- PRC/UDP ---> Proposer <== RPC/UDP ==> Acceptor
@@ -15,7 +15,7 @@ APIs <=> http/json <=> Agent <--- PRC/UDP ---> Proposer <== RPC/UDP ==> Acceptor
                          |                        |                        |
                          v                        v                        v
                        Redis                    Redis                    Redis
-</pre>
+</code></pre>
 
 ## Similar or Reference Projects
  * Google Chubby <http://research.google.com/archive/chubby.html>
