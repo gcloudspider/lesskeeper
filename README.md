@@ -6,6 +6,16 @@
  * Similar to Google Chubby, Apache ZooKeeper
  * Open Source, lightweight implementation in Go
 
+## Architecture
+
+/---------Client---------\                       /---------Server----------\
+
+APIs <=> http/json <=> Agent <--- PRC/UDP ---> Proposer <== RPC/UDP ==> Acceptor
+                         ^                        ^                        ^
+                         |                        |                        |
+                         v                        v                        v
+                       Redis                    Redis                    Redis
+
 ## Similar or Reference Projects
  * Google Chubby <http://research.google.com/archive/chubby.html>
  * Apache Zookeeper <http://zookeeper.apache.org/>
