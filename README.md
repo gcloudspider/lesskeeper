@@ -8,13 +8,13 @@
 
 ## Architecture
 <pre><code>
-/---------Client---------\                       /---------Server----------\
+    /---------Client---------\                  /---------Server----------\
 
-APIs <=> http/json <=> Agent <--- PRC/UDP ---> Proposer <== RPC/UDP ==> Acceptor
-                         ^                        ^                        ^
-                         |                        |                        |
-                         v                        v                        v
-                       Redis                    Redis                    Redis
+    APIs <=> http/json <=> Agent <- PRC/UDP -> Proposer <= RPC/UDP => Acceptor
+                             ^                    ^                      ^
+                             |                    |                      |
+                             v                    v                      v
+                           Redis                Redis                  Redis
 </code></pre>
 
 ## Similar or Reference Projects
