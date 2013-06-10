@@ -65,11 +65,4 @@ rm -rf /tmp/hooto-keeper";
 
 shell_exec($cmd);
 
-die();
-?>
-
-
-
- 
-
-
+exit(0);
