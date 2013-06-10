@@ -5,6 +5,6 @@ src/hooto-keeper
 *.rpm
 *~
 var/*
-deps/*
 bin/*
+deps/*
 
