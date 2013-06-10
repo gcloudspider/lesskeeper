@@ -23,8 +23,6 @@ install -d %{buildroot}%{app_home}/bin
 install -d %{buildroot}%{app_home}/etc
 install -d %{buildroot}%{_initrddir}
 
-#cp -rp ./* %{buildroot}%{app_home}/
-
 install -m 0755 -p bin/hooto-keeper-store %{buildroot}%{app_home}/bin/hooto-keeper-store
 install -m 0755 -p bin/hooto-keeper %{buildroot}%{app_home}/bin/hooto-keeper
 cp -rp etc/keeper.json %{buildroot}%{app_home}/etc/keeper.json

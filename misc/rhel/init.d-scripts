@@ -20,27 +20,27 @@ set -e
 
 case "$1" in
     start)
-        echo -n "Starting $NAME ...\n" 
+        echo -n -e "Starting $NAME ...\n" 
         
         # Start hooto-keeper!
         $DAEMON $DAEMON_ARGS > /dev/null 2>&1 &
         sleep 2
-        echo -n "$NAME PID: "
+        echo -n -e "$NAME PID: "
         if pidof $NAME; then
-            echo -n "Started\n"
+            echo -n -e "Started\n"
         else
-            echo -n "Failed\n"
+            echo -n -e "Failed\n"
         fi
         ;;
 
     stop)
-        echo -n "Stopping $NAME ...\n"
-        echo -n "$NAME PID: "
+        echo -n -e "Stopping $NAME ...\n"
+        echo -n -e "$NAME PID: "
         if pidof $NAME; then
             kill -9 `pidof $NAME`
             sleep 2
         fi
-        echo -n "\nStopped\n"
+        echo -n -e "\nStopped\n"
         ;;
 
     restart)
@@ -49,11 +49,11 @@ case "$1" in
         ;;
 
     status)
-        echo -n "$NAME PID: "
+        echo -n -e "$NAME PID: "
         if pidof -s $NAME; then
-            echo -n "\n$NAME is running\n"
+            echo -n -e "\n$NAME is running\n"
         else
-            echo -n "\n$NAME is not running\n"
+            echo -n -e "\n$NAME is not running\n"
         fi
         ;;
 
