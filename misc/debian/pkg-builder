@@ -24,14 +24,30 @@ if (!preg_match("/VERSION\ +string\ +\=\ +\"(.*)\"/", $ver, $mat)) {
 }
 $ver = $mat[1];
 
-$cmd = "rm -rf /tmp/hooto-keeper
 
+$cmd = "rm -rf /tmp/hooto-keeper
+mkdir -p /tmp/hooto-keeper/DEBIAN";
+shell_exec($cmd);
+
+
+$file = "{$basedir}/misc/debian/control";
+$control = file_get_contents($file);
+$mat = array(
+    "/Version:\ +(.*?)\n/",
+    "/Architecture:\ +(.*?)\n/",
+);
+$rep = array(
+    "Version: {$ver}-{$rel}\n",
+    "Architecture: amd64\n",
+);
+$control = preg_replace($mat, $rep, $control);
+file_put_contents("/tmp/hooto-keeper/DEBIAN/control", $control);
+
+
+$cmd = "
 mkdir -p /tmp/hooto-keeper/opt/hooto/keeper/bin
 cp $basedir/bin/* /tmp/hooto-keeper/opt/hooto/keeper/bin/
 cp $basedir/src/hooto-keeper /tmp/hooto-keeper/opt/hooto/keeper/bin/
-
-mkdir -p /tmp/hooto-keeper/DEBIAN
-cp $basedir/misc/debian/control /tmp/hooto-keeper/DEBIAN/
 
 mkdir -p /tmp/hooto-keeper/etc/init.d
 cp $basedir/misc/debian/init.d-scripts /tmp/hooto-keeper/etc/init.d/hooto-keeper

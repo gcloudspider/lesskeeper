@@ -2,13 +2,11 @@ Source: hooto-keeper
 Section: Applications
 Priority: optional
 Maintainer: Eryx <evorui@gmail.com>
-Build-Depends: debhelper (>= 7.0.50)
-Version: v-x.y.z
-Standards-Version: sv-x.y.z
-#Homepage: https://github.com/eryx/h5keeper
+Version: x.y.z
+Homepage: https://github.com/eryx/h5keeper
 Package: hooto-keeper
 Architecture: amd64
 Depends: adduser
-Description: Distributed coordination service, similar to Google Chubby or Apache ZeeKeeper
+Description: Distributed coordination service
 
 
