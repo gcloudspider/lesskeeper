@@ -1,21 +1,20 @@
 #! /bin/sh
 ### BEGIN INIT INFO
-# Provides:        h5keeper
+# Provides:        hooto-keeper
 # Required-Start: $syslog $remote_fs
 # Required-Stop:  $syslog $remote_fs
 # Should-Start:   $local_fs
 # Should-Stop:    $local_fs
 # Default-Start:  2 3 4 5
 # Default-Stop:   0 1 6
-# Short-Description:    h5keeper - Hooto Keeper
-# Description:        h5keeper - Hooto Keeper
+# Short-Description:    hooto-keeper - Hooto Keeper
+# Description:        hooto-keeper - Hooto Keeper
 ### END INIT INFO
 
 
-DAEMON=/opt/h5keeper/bin/h5keeper
-DAEMON_ARGS=""
-#" -c /opt/h5keeper/etc/h5keeper.conf"
-NAME=h5keeper
+DAEMON=/opt/hooto/keeper/bin/hooto-keeper
+DAEMON_ARGS="--prefix=/opt/hooto/keeper"
+NAME=hooto-keeper
 APPUSER=root
 
 set -e
@@ -24,7 +23,7 @@ case "$1" in
     start)
         echo -n "Starting $NAME ...\n" 
         
-        # Start h5keeper!
+        # Start hooto-keeper!
         $DAEMON $DAEMON_ARGS > /dev/null 2>&1 &
         sleep 2
         echo -n "$NAME PID: "

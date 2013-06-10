@@ -1,6 +1,6 @@
-%define app_home /opt/%{name}
+%define app_home /opt/hooto/keeper
 
-Name: h5keeper
+Name: hooto-keeper
 Version: x.y.z
 Release: 1%{?dist}
 Vendor: Hooto
@@ -8,7 +8,7 @@ Summary: Distributed coordination service
 License: Apache 2
 Group: Applications
 BuildRequires: gcc
-Source0: h5keeper-x.y.z.tar.gz
+Source0: hooto-keeper-x.y.z.tar.gz
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}
 
 %description
@@ -18,32 +18,37 @@ BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}
 
 %install
 rm -rf %{buildroot}
-install -d %{buildroot}%{app_home}/data
+install -d %{buildroot}%{app_home}/var
 install -d %{buildroot}%{app_home}/bin
 install -d %{buildroot}%{app_home}/etc
+install -d %{buildroot}%{_initrddir}
 
 #cp -rp ./* %{buildroot}%{app_home}/
 
-install -m 0755 -p bin/h5keeper-store %{buildroot}%{app_home}/bin/h5keeper-store
-install -m 0755 -p bin/h5keeper %{buildroot}%{app_home}/bin/h5keeper
+install -m 0755 -p bin/hooto-keeper-store %{buildroot}%{app_home}/bin/hooto-keeper-store
+install -m 0755 -p bin/hooto-keeper %{buildroot}%{app_home}/bin/hooto-keeper
+cp -rp etc/keeper.json %{buildroot}%{app_home}/etc/keeper.json
+cp -rp etc/redis.conf %{buildroot}%{app_home}/etc/redis.conf
+
+install -m 0755 -p misc/rhel/init.d-scripts %{buildroot}%{_initrddir}/%{name}
 
 %clean
 
 %pre
 if [ $1 == 2 ]; then
-    service h5keeper stop
+    service hooto-keeper stop
 fi
 
 %post
 
 if [ $1 == 2 ]; then
-    service h5keeper start
+    service hooto-keeper start
 fi
 
 %preun
 if [ $1 = 0 ]; then
-    service h5keeper stop
-    chkconfig --del h5keeper
+    service hooto-keeper stop
+    chkconfig --del hooto-keeper
 fi
 
 %postun
@@ -51,4 +56,7 @@ fi
 %files
 %defattr(-,root,root,-)
 %dir %{app_home}
+%{_initrddir}/%{name}
+%config(noreplace) %{app_home}/etc/keeper.json
+%config(noreplace) %{app_home}/etc/redis.conf
 %{app_home}/

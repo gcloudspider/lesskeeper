@@ -1,6 +1,6 @@
 *.sublime-workspace
 *.doc
-src/h5keeper
+src/hooto-keeper
 *.deb
 *.rpm
 *~

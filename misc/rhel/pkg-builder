@@ -10,9 +10,12 @@ if ($arch != "x86_64") {
 
 $basedir = realpath(__DIR__.'/../..');
 
-$cmd = "cd $basedir/deps/redis\n
-    make\n
-    cp -rp ./src/redis-server $basedir/bin/h5keeper-store ";
+$cmd = "
+killall hooto-keeper-store\n
+cd $basedir/deps/redis\n
+make\n
+cp -rp ./src/redis-server $basedir/bin/hooto-keeper-store ";
+
 shell_exec($cmd);
 
 $ver = file_get_contents($basedir."/src/version.go");
@@ -26,15 +29,23 @@ rm -rf /tmp/rpm-tmp*
 rm -rf /tmp/{BUILD,RPMS,SOURCES,SPECS,SRPMS,BUILDROOT}
 mkdir -p /tmp/{BUILD,RPMS,SOURCES,SPECS,SRPMS,BUILDROOT}
 
-rm -rf /tmp/SOURCES/h5keeper*
+rm -rf /tmp/SOURCES/hooto-keeper*
 
-mkdir -p /tmp/SOURCES/h5keeper-{$ver}/bin
+mkdir -p /tmp/SOURCES/hooto-keeper-{$ver}/bin
+mkdir -p /tmp/SOURCES/hooto-keeper-{$ver}/var
+mkdir -p /tmp/SOURCES/hooto-keeper-{$ver}/etc
 
-cp -rp $basedir/src/h5keeper /tmp/SOURCES/h5keeper-{$ver}/bin/
-cp -rp $basedir/deps/redis/src/h5keeper-store /tmp/SOURCES/h5keeper-{$ver}/bin/
+
+cp -rp $basedir/src/hooto-keeper /tmp/SOURCES/hooto-keeper-{$ver}/bin/
+cp -rp $basedir/bin/hooto-keeper-store /tmp/SOURCES/hooto-keeper-{$ver}/bin/
+
+cp -rp $basedir/misc/keeper/keeper.json /tmp/SOURCES/hooto-keeper-{$ver}/etc/keeper.json
+cp -rp $basedir/misc/redis/redis.conf /tmp/SOURCES/hooto-keeper-{$ver}/etc/redis.conf
+
+cp -rp $basedir/misc /tmp/SOURCES/hooto-keeper-{$ver}/misc
 
 cd /tmp/SOURCES
-tar zcf h5keeper-{$ver}.tar.gz h5keeper-{$ver}
+tar zcf hooto-keeper-{$ver}.tar.gz hooto-keeper-{$ver}
 ";
 shell_exec($cmd);
 
@@ -50,16 +61,16 @@ $mat = array(
     "/Source0:\ +(.*?)\n/",
 );
 $rep = array(
-    "Name: h5keeper\n",
+    "Name: hooto-keeper\n",
     "Version: {$ver}\n",
     "Release: {$rele}\n",
-    "Source0: h5keeper-{$ver}.tar.gz\n",
+    "Source0: hooto-keeper-{$ver}.tar.gz\n",
 );
 $spec = preg_replace($mat, $rep, $spec);
 $spec = str_replace('%{?dist}', '', $spec);
 $spec = preg_replace("/Release:\ +(.*?)\n/", "Release: $1%{?dist}\n", $spec);
 
-$specfile = "/tmp/h5keeper-{$ver}-rpm.spec";
+$specfile = "/tmp/hooto-keeper-{$ver}-rpm.spec";
 file_put_contents($specfile, $spec);
 
 $cmd = "rpmbuild -ba $specfile";
@@ -79,7 +90,7 @@ if ($retint > 0) {
 }
 shell_exec($cmd);
 
-$cmd = "cp /tmp/RPMS/$arch/h5keeper-{$ver}* .";
+$cmd = "cp /tmp/RPMS/$arch/hooto-keeper-{$ver}* .";
 shell_exec($cmd);
 
 die();

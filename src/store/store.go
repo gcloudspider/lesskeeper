@@ -19,12 +19,13 @@ func (this *Store) Initialize(cfg conf.Config) {
         return
     }
 
-    pid, err := exec.Command("/bin/pidof", "h5keeper-store").Output()
+    pid, err := exec.Command("/bin/pidof", cfg.StoreServer).Output()
     if err != nil {
         // TODO
     }
     if string(pid) == "" {
-        rdsv := exec.Command(cfg.StoreServer, strings.Fields(cfg.StoreOption)...)
+        rdsv := exec.Command(cfg.Prefix+"/bin/"+cfg.StoreServer,
+            strings.Fields(cfg.StoreOption)...)
         if err := rdsv.Run(); err != nil {
             fmt.Println(err)
         }

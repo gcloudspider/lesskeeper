@@ -25,12 +25,12 @@ func NewConfig(prefix string) (Config, error) {
     var cfg Config
 
     if prefix == "" {
-        prefix = "/opt/h5keeper"
+        prefix = "/opt/hooto/keeper"
     }
     reg, _ := regexp.Compile("/+")
     cfg.Prefix = "/" + strings.Trim(reg.ReplaceAllString(prefix, "/"), "/")
 
-    file := cfg.Prefix + "/etc/h5keeper.json"
+    file := cfg.Prefix + "/etc/keeper.json"
     if _, err := os.Stat(file); err != nil && os.IsNotExist(err) {
         return cfg, errors.New("Error: config file is not exists")
     }
@@ -51,14 +51,15 @@ func NewConfig(prefix string) (Config, error) {
             "config file invalid. (%s)", err.Error()))
     }
 
-    store_server := cfg.Prefix + "/bin/h5keeper-store"
+    cfg.StoreServer = "hooto-keeper-store"
+    store_server := cfg.Prefix + "/bin/" + cfg.StoreServer
     if _, err := os.Stat(store_server); err != nil && os.IsNotExist(err) {
         return cfg, errors.New(fmt.Sprintf("Error: "+
-            "h5keeper-store (%s) is not exists", store_server))
+            "hooto-keeper-store (%s) is not exists", store_server))
     }
-    cfg.StoreServer = store_server
+
     cfg.StoreNetwork = "unix"
-    cfg.StoreAddress = cfg.Prefix + "/var/h5keeper.sock"
+    cfg.StoreAddress = cfg.Prefix + "/var/keeper.sock"
 
     store_option := cfg.Prefix + "/etc/redis.conf"
     store_option += " --daemonize yes"

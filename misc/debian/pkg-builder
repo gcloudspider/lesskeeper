@@ -15,7 +15,7 @@ $basedir = realpath(__DIR__.'/../..');
 
 $cmd = "cd $basedir/deps/redis\n
     make\n
-    cp -rp ./src/redis-server $basedir/bin/h5keeper-store ";
+    cp -rp ./src/redis-server $basedir/bin/hooto-keeper-store ";
 shell_exec($cmd);
 
 $ver = file_get_contents($basedir."/src/version.go");
@@ -24,28 +24,28 @@ if (!preg_match("/VERSION\ +string\ +\=\ +\"(.*)\"/", $ver, $mat)) {
 }
 $ver = $mat[1];
 
-$cmd = "rm -rf /tmp/h5keeper
+$cmd = "rm -rf /tmp/hooto-keeper
 
-mkdir -p /tmp/h5keeper/opt/h5keeper/bin
-cp $basedir/bin/* /tmp/h5keeper/opt/h5keeper/bin/
-cp $basedir/src/h5keeper /tmp/h5keeper/opt/h5keeper/bin/
+mkdir -p /tmp/hooto-keeper/opt/hooto/keeper/bin
+cp $basedir/bin/* /tmp/hooto-keeper/opt/hooto/keeper/bin/
+cp $basedir/src/hooto-keeper /tmp/hooto-keeper/opt/hooto/keeper/bin/
 
-mkdir -p /tmp/h5keeper/DEBIAN
-cp $basedir/misc/debian/control /tmp/h5keeper/DEBIAN/
+mkdir -p /tmp/hooto-keeper/DEBIAN
+cp $basedir/misc/debian/control /tmp/hooto-keeper/DEBIAN/
 
-mkdir -p /tmp/h5keeper/etc/init.d
-cp $basedir/misc/debian/init.d-scripts /tmp/h5keeper/etc/init.d/h5keeper
-chmod +rx /tmp/h5keeper/etc/init.d/h5keeper
+mkdir -p /tmp/hooto-keeper/etc/init.d
+cp $basedir/misc/debian/init.d-scripts /tmp/hooto-keeper/etc/init.d/hooto-keeper
+chmod +rx /tmp/hooto-keeper/etc/init.d/hooto-keeper
 
-mkdir -p /tmp/h5keeper/opt/h5keeper/etc
-cp $basedir/misc/redis/redis.conf /tmp/h5keeper/opt/h5keeper/etc/redis.conf
-cp $basedir/misc/h5keeper/h5keeper.json /tmp/h5keeper/opt/h5keeper/etc/h5keeper.json
+mkdir -p /tmp/hooto-keeper/opt/hooto/keeper/etc
+cp $basedir/misc/redis/redis.conf /tmp/hooto-keeper/opt/hooto/keeper/etc/redis.conf
+cp $basedir/misc/keeper/keeper.json /tmp/hooto-keeper/opt/hooto/keeper/etc/keeper.json
 
-mkdir -p /tmp/h5keeper/opt/h5keeper/var
+mkdir -p /tmp/hooto-keeper/opt/hooto/keeper/var
 
-dpkg -b /tmp/h5keeper/ $basedir/h5keeper-{$ver}~lc.{$rel}_amd64.deb
+dpkg -b /tmp/hooto-keeper/ $basedir/hooto-keeper_{$ver}-{$rel}_d6_amd64.deb
 
-rm -rf /tmp/h5keeper";
+rm -rf /tmp/hooto-keeper";
 
 shell_exec($cmd);
 

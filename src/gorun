@@ -16,9 +16,9 @@ for dir in $dirs; do
 done
 
 
-rm -f h5keeper
+rm -f hooto-keeper
 
-go build -ldflags "-w -s" -o h5keeper proposer.go acceptor.go cmdaction.go jtloc.go main.go version.go
+go build -ldflags "-w -s" -o hooto-keeper proposer.go acceptor.go cmdaction.go jtloc.go main.go version.go
 
-./h5keeper --prefix=/opt/src/m12/h5keeper
+./hooto-keeper --prefix=/opt/src/m12/h5keeper
 
