@@ -1,13 +1,10 @@
 package peer
 
 import (
+    "encoding/json"
     "fmt"
     "net"
     "net/rpc"
-    //"strconv"
-    "encoding/json"
-    //"strings"
-    //"sync"
     "time"
 )
 
@@ -138,7 +135,7 @@ func (this *NetUDP) handleSending() {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 type NetTCP struct {
-    ln  net.Listener
+    Ln  net.Listener
 
     out chan *NetCall
 
@@ -185,7 +182,7 @@ func NewTCPInstance() *NetTCP {
 
 func (this *NetTCP) Listen(port string) (err error) {
 
-    this.ln, err = net.Listen("tcp", ":"+port)
+    this.Ln, err = net.Listen("tcp", ":"+port)
     if err != nil {
         fmt.Println("listen error:", err)
     }

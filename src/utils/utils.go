@@ -3,11 +3,18 @@ package utils
 import (
     "crypto/rand"
     "encoding/json"
+    "errors"
     "fmt"
     "io"
 )
 
 func JsonDecode(str string, rs interface{}) (err error) {
+
+    defer func() {
+        if r := recover(); r != nil {
+            err = errors.New("json: invalid format")
+        }
+    }()
 
     if err = json.Unmarshal([]byte(str), &rs); err != nil {
         return err

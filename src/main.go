@@ -1,8 +1,10 @@
 package main
 
 import (
-    agt "./agent"
+    "./agent"
     "./conf"
+    pr "./peer"
+    "./store"
     "flag"
     "fmt"
     "math/rand"
@@ -13,19 +15,12 @@ import (
     "time"
 )
 
-var db Kpdata
+var stor store.Store
 
-var peer *NetUDP
+var prbc *pr.NetUDP
+var prkp *pr.NetTCP
 
-//var port = "9628"
-
-var agent *Agent
-var agentPort = "9530"
-
-var agn *agt.Agent
-
-var gport = "9538"
-var gnet *NetTCP
+var agt *agent.Agent
 
 var bcip = "127.0.0.1"
 
@@ -35,45 +30,34 @@ var cfg conf.Config
 
 var flag_prefix = flag.String("prefix", "", "the prefix folder path")
 
+var err error
+
 func main() {
 
     start := time.Now()
-
-    flag.Parse()
-    var err error
 
     // Environment variable initialization
     runtime.GOMAXPROCS(runtime.NumCPU())
     rand.Seed(time.Now().UnixNano())
 
     //
+    flag.Parse()
     if cfg, err = conf.NewConfig(*flag_prefix); err != nil {
         fmt.Println(err)
         os.Exit(1)
     }
 
-    /** v2/ */
-    db.Initialize(cfg)
+    stor.Initialize(cfg)
 
-    //peer = NewPeer(port)
-    //peer.AddHandler(UDPdispatchEvent)
+    prbc = pr.NewUDPInstance()
+    prbc.ListenAndServe(cfg.KeeperPort, CommandDispatchEvent)
 
-    peer = NewUDPInstance()
-    peer.ListenAndServe(cfg.KeeperPort, CommandDispatchEvent)
+    agt = new(agent.Agent)
+    agt.Serve(cfg.AgentPort)
 
-    agn = new(agt.Agent)
-    agn.Serve(cfg.AgentPort)
-    /** /v2 */
+    //WatcherInitialize()
 
-    agent = NewAgent(agentPort)
-
-    WatcherInitialize()
     //
-    gnet = NewTCPInstance()
-    if err := gnet.Listen(cfg.KeeperPort); err != nil {
-        // TODO
-    }
-
     pp := new(Proposer)
     rpc.Register(pp)
 
@@ -82,7 +66,12 @@ func main() {
 
     rpc.HandleHTTP()
 
-    go http.Serve(gnet.ln, nil)
+    prkp = pr.NewTCPInstance()
+    if err := prkp.Listen(cfg.KeeperPort); err != nil {
+        fmt.Println(err)
+        os.Exit(1)
+    }
+    go http.Serve(prkp.Ln, nil)
 
     // go client-cronjob
     go JobTrackerLocal()

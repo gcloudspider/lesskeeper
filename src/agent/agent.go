@@ -17,7 +17,7 @@ type Agent struct {
     cfg    conf.Config
 }
 
-// API V2
+// API
 func (this *Agent) Serve(port string) {
 
     //this.net = new(peer.NetTCP)
@@ -27,8 +27,7 @@ func (this *Agent) Serve(port string) {
 
     go func() {
 
-        http.HandleFunc("/h5keeper/api", ApiGen)
-        http.HandleFunc("/h5keeper/apiv2", ApiV2)
+        http.HandleFunc("/h5keeper/api", ApiHandler)
 
         s := &http.Server{
             Addr:           ":" + port,

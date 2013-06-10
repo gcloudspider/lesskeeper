@@ -2,28 +2,16 @@ package main
 
 import (
     pr "./peer"
+    "./store"
     "./utils"
-    "strconv"
     "strings"
     "sync"
     "time"
 )
 
+type Reply pr.Reply
+
 type Proposer int
-
-type Proposal struct {
-    Key string
-    Val string
-
-    VerNow uint64
-    VerSet uint64
-
-    Tag  string
-    Addr string
-
-    Valued   int
-    Unvalued int
-}
 
 type Request pr.Request
 
@@ -31,7 +19,7 @@ type ProposalPromise struct {
     VerNow, VerSet uint64
 }
 
-var proposals = map[uint64]*Proposal{}
+var proposals = map[uint64]*store.NodeProposal{}
 var proposal_servlock sync.Mutex
 
 type ProposalWatcher map[string]int64 // map[host]ttl
@@ -46,244 +34,7 @@ type WatcherQueue struct {
     Rev   uint64
 }
 
-func (p *Proposer) Cmd(rq *Request, rp *Reply) error {
-
-    switch string(rq.Method) {
-    case "GET":
-        CmdGet(rq, rp)
-    case "GETS":
-        CmdGets(rq, rp)
-    case "LIST":
-        CmdList(rq, rp)
-    case "SET":
-        CmdSet(rq, rp)
-    case "DEL":
-    }
-
-    return nil
-}
-
-func CmdGet(rq *Request, rp *Reply) {
-
-    var rqbody struct {
-        Path string
-    }
-    e := utils.JsonDecode(rq.Body, &rqbody)
-    if e != nil {
-        return
-    }
-
-    if node, e := NodeGet(rqbody.Path); e == nil {
-        rp.Type = ReplyString
-        rp.Body = node.C
-    }
-}
-
-func CmdGets(rq *Request, rp *Reply) {
-
-    var rqbody struct {
-        Path string
-    }
-    e := utils.JsonDecode(rq.Body, &rqbody)
-    if e != nil {
-        return
-    }
-
-    if rs, e := NodeGets(rqbody.Path); e == nil {
-        rp.Type = ReplyString
-        rp.Body = rs
-    }
-
-    return
-}
-
-func CmdList(rq *Request, rp *Reply) {
-
-    var rqbody struct {
-        Path string
-    }
-    e := utils.JsonDecode(rq.Body, &rqbody)
-    if e != nil {
-        return
-    }
-
-    if rs, e := NodeList(rqbody.Path); e == nil {
-        rp.Type = ReplyString
-        rp.Body = rs
-    }
-}
-
-func CmdSet(rq *Request, rp *Reply) {
-
-    var rqbody struct {
-        Path string
-        Val  string
-    }
-    e := utils.JsonDecode(rq.Body, &rqbody)
-    if e != nil {
-        return
-    }
-
-    nodeEvent := EventNone
-
-    /* if ok, _ := regexp.MatchString("^([0-9a-zA-Z ._-]{1,64})$", rqbody.Path); !ok {
-        rp.Type = ReplyError
-        return
-    } */
-
-    node, _ := NodeGet(rqbody.Path)
-    if node.R > 0 {
-        if node.C == rqbody.Val {
-            //Println("same node", rqbody.Path)
-            rp.Type = ReplyOK
-            return
-        }
-        nodeEvent = EventNodeDataChanged
-    } else {
-        nodeEvent = EventNodeCreated
-    }
-
-    n, _ := db.Incrby("ctl:ltid", 1)
-    vernewi := len(kps)*n + kpsNum - 1
-    verset := uint64(vernewi)
-    //vernews := strconv.Itoa(vernewi)
-
-    pl := new(Proposal)
-    pl.Key = rqbody.Path
-    pl.Val = rqbody.Val
-    pl.VerNow = node.R
-    pl.VerSet = verset
-    pl.Valued = 0
-    pl.Unvalued = 0
-
-    proposals[verset] = pl
-    //fmt.Println("PUT Acceptor.Prepare", pl)
-
-    promised := make(chan uint8, len(kp))
-    go func() {
-        time.Sleep(30e9)
-        promised <- 9
-    }()
-
-    // Acceptor.Prepare
-    for _, v := range kp {
-
-        go func() {
-
-            call := NewNetCall()
-
-            call.Method = "Acceptor.Prepare"
-            call.Args = pl
-            call.Reply = new(ProposalPromise)
-            call.Addr = v + ":" + cfg.KeeperPort
-
-            gnet.Call(call)
-
-            _ = <-call.Status
-
-            rs := call.Reply.(*ProposalPromise)
-            if rs.VerNow == pl.VerNow {
-                promised <- 1
-            } else {
-                promised <- 0
-            }
-        }()
-
-        //fmt.Println(k, v)
-    }
-
-    valued := 0
-    unvalued := 0
-
-L:
-    for {
-        select {
-        case s := <-promised:
-            if s == 1 {
-                valued++
-                if 2*valued > len(kp) {
-                    //fmt.Println("Valued")
-                    break L
-                }
-            } else if s == 0 {
-                unvalued++
-                if 2*unvalued > len(kp) {
-                    rp.Type = ReplyError
-                    rp.Body = "UnValued"
-                    return
-                }
-            } else {
-                rp.Type = ReplyError
-                return
-            }
-        }
-    }
-
-    // Acceptor.Accept
-    accepted := make(chan uint8, len(kp))
-    go func() {
-        time.Sleep(30e9)
-        accepted <- 9
-    }()
-
-    for _, v := range kp {
-
-        go func() {
-
-            call := NewNetCall()
-
-            call.Method = "Acceptor.Accept"
-            call.Args = pl
-            call.Reply = new(Reply)
-            call.Addr = v + ":" + cfg.KeeperPort
-
-            gnet.Call(call)
-
-            _ = <-call.Status
-
-            rs := call.Reply.(*Reply)
-
-            //fmt.Println("Acceptor.Accept", rs)
-            if rs.Type == ReplyOK {
-                accepted <- 1
-            } else {
-                accepted <- 0
-            }
-        }()
-    }
-
-    valued = 0
-    unvalued = 0
-
-A:
-    for {
-        select {
-        case s := <-accepted:
-            if s == 1 {
-                valued++
-                if 2*valued > len(kp) {
-                    rp.Type = ReplyOK
-                    watchmq <- &WatcherQueue{strings.Trim(rqbody.Path, "/"), nodeEvent, 0}
-                    break A
-                }
-            } else if s == 0 {
-                unvalued++
-                if 2*unvalued > len(kp) {
-                    rp.Type = ReplyError
-                    rp.Body = "UnValued"
-                    return
-                }
-            } else {
-                rp.Type = ReplyError
-                return
-            }
-        }
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-func WatcherInitialize() {
+/** TODO func WatcherInitialize() {
 
     go func() {
 
@@ -307,53 +58,97 @@ func WatcherInitialize() {
                             "path":   q.Path,
                             "event":  q.Event,
                         }
-                        peer.Send(msg, ip+":"+cfg.KeeperPort)
+                        prbc.Send(msg, ip+":"+cfg.KeeperPort)
                     }
                 }
             }
         }
     }()
 }
+*/
 
-func (p *Proposer) Process(args map[int][]byte, rep *Reply) error {
+func (p *Proposer) Cmd(rq *Request, rp *Reply) error {
 
-    if len(args) == 0 {
-        return nil
-    }
-
-    //Println(string(args[0]))
-
-    switch string(args[0]) {
+    switch string(rq.Method) {
     case "GET":
-        ProposerGet(args, rep)
+        CmdGet(rq, rp)
     case "GETS":
-        ProposerGets(args, rep)
-    case "SET":
-        ProposerSet(args, rep)
-    case "DEL":
-        args[2] = []byte(NodeDelFlag)
-        ProposerSet(args, rep)
+        CmdGets(rq, rp)
     case "LIST":
-        ProposerList(args, rep)
-    case "WATCH":
-        ProposerWatch(args, rep)
-    case "SELECT":
-        rep.Type = ReplyOK
+        CmdList(rq, rp)
+    case "SET":
+        CmdSet(rq, rp, false)
+    case "DEL":
+        CmdSet(rq, rp, true)
     }
 
-    //Println(rep)
     return nil
 }
 
-func ProposerWatch(args map[int][]byte, rep *Reply) {
+func CmdGet(rq *Request, rp *Reply) {
 
-    rep.Type = ReplyWatch
-
-    if len(args) < 4 {
-        rep.Type = ReplyError
+    var rqbody struct {
+        Path string
+    }
+    e := utils.JsonDecode(rq.Body, &rqbody)
+    if e != nil {
         return
     }
-    path := strings.Trim(string(args[1]), "/")
+
+    if node, e := stor.NodeGet(rqbody.Path); e == nil {
+        rp.Type = pr.ReplyString
+        rp.Body = node.C
+    }
+}
+
+func CmdGets(rq *Request, rp *Reply) {
+
+    var rqbody struct {
+        Path string
+    }
+    e := utils.JsonDecode(rq.Body, &rqbody)
+    if e != nil {
+        return
+    }
+
+    if rs, e := stor.NodeGets(rqbody.Path); e == nil {
+        rp.Type = pr.ReplyString
+        rp.Body = rs
+    }
+
+    return
+}
+
+func CmdList(rq *Request, rp *Reply) {
+
+    var rqbody struct {
+        Path string
+    }
+    e := utils.JsonDecode(rq.Body, &rqbody)
+    if e != nil {
+        return
+    }
+
+    if rs, e := stor.NodeList(rqbody.Path); e == nil {
+        rp.Type = pr.ReplyString
+        rp.Body = rs
+    }
+}
+
+/** TODO
+func CmdWatch(rq *Request, rp *Reply) {
+
+    rp.Type = pr.ReplyWatch
+
+    var rqbody struct {
+        Path string
+    }
+    e := utils.JsonDecode(rq.Body, &rqbody)
+    if e != nil {
+        return
+    }
+
+    path := strings.Trim(rqbody.Path, "/")
 
     var w ProposalWatcher
     var ok bool
@@ -362,107 +157,53 @@ func ProposerWatch(args map[int][]byte, rep *Reply) {
         w = map[string]int64{}
         watches[path] = w
     }
-    ttlen, _ := strconv.Atoi(string(args[2]))
-    w[string(args[3])] = time.Now().Unix() + int64(ttlen)
+
+    w[string(args[3])] = time.Now().Unix() + int64(rp.ttlen)
     watcherlock.Unlock()
-
-    //Println("args==", args, w)
-    return
 }
+*/
 
-func ProposerList(args map[int][]byte, rep *Reply) {
+func CmdSet(rq *Request, rp *Reply, del bool) {
 
-    if len(args) < 2 {
-        rep.Type = ReplyError
+    var rqbody struct {
+        Path string
+        Val  string
+    }
+    e := utils.JsonDecode(rq.Body, &rqbody)
+    if e != nil {
         return
     }
+    if del {
+        rqbody.Val = store.NodeDelFlag
+    }
 
-    path := string(args[1])
-    /* if ok, _ := regexp.MatchString("^([0-9a-zA-Z ._-]{1,64})$", path); !ok {
-        rep.Type = ReplyError
+    nodeEvent := store.EventNone
+
+    /* if ok, _ := regexp.MatchString("^([0-9a-zA-Z ._-]{1,64})$", rqbody.Path); !ok {
+        rp.Type = pr.ReplyError
         return
     } */
 
-    if rs, e := NodeList(path); e == nil {
-        rep.Type = ReplyString
-        rep.Body = rs
-    }
-
-    return
-}
-
-func ProposerGet(args map[int][]byte, rep *Reply) {
-
-    if len(args) < 2 {
-        rep.Type = ReplyError
-        return
-    }
-
-    path := string(args[1])
-    /* if ok, _ := regexp.MatchString("^([0-9a-zA-Z ._-]{1,64})$", path); !ok {
-        rep.Type = ReplyError
-        return
-    } */
-
-    if node, e := NodeGet(path); e == nil {
-        rep.Type = ReplyString
-        rep.Body = node.C
-    }
-
-    return
-}
-
-func ProposerGets(args map[int][]byte, rep *Reply) {
-
-    if len(args) < 2 {
-        rep.Type = ReplyError
-        return
-    }
-
-    keys := string(args[1])
-    if rs, e := NodeGets(keys); e == nil {
-        rep.Type = ReplyString
-        rep.Body = rs
-    }
-
-    return
-}
-
-func ProposerSet(args map[int][]byte, rep *Reply) {
-
-    if len(args) < 3 {
-        rep.Type = ReplyError
-        return
-    }
-
-    nodeEvent := EventNone
-
-    path := string(args[1])
-    /* if ok, _ := regexp.MatchString("^([0-9a-zA-Z ._-]{1,64})$", path); !ok {
-        rep.Type = ReplyError
-        return
-    } */
-
-    node, _ := NodeGet(path)
+    node, _ := stor.NodeGet(rqbody.Path)
     if node.R > 0 {
-        if node.C == string(args[2]) {
-            //Println("same node", path)
-            rep.Type = ReplyOK
+        if node.C == rqbody.Val {
+            //Println("same node", rqbody.Path)
+            rp.Type = pr.ReplyOK
             return
         }
-        nodeEvent = EventNodeDataChanged
+        nodeEvent = store.EventNodeDataChanged
     } else {
-        nodeEvent = EventNodeCreated
+        nodeEvent = store.EventNodeCreated
     }
 
-    n, _ := db.Incrby("ctl:ltid", 1)
+    n, _ := stor.Incrby("ctl:ltid", 1)
     vernewi := len(kps)*n + kpsNum - 1
     verset := uint64(vernewi)
     //vernews := strconv.Itoa(vernewi)
 
-    pl := new(Proposal)
-    pl.Key = path
-    pl.Val = string(args[2])
+    pl := new(store.NodeProposal)
+    pl.Key = rqbody.Path
+    pl.Val = rqbody.Val
     pl.VerNow = node.R
     pl.VerSet = verset
     pl.Valued = 0
@@ -482,14 +223,14 @@ func ProposerSet(args map[int][]byte, rep *Reply) {
 
         go func() {
 
-            call := NewNetCall()
+            call := pr.NewNetCall()
 
             call.Method = "Acceptor.Prepare"
             call.Args = pl
             call.Reply = new(ProposalPromise)
-            call.Addr = v + ":" + gport
+            call.Addr = v + ":" + cfg.KeeperPort
 
-            gnet.Call(call)
+            prkp.Call(call)
 
             _ = <-call.Status
 
@@ -520,12 +261,12 @@ L:
             } else if s == 0 {
                 unvalued++
                 if 2*unvalued > len(kp) {
-                    rep.Type = ReplyError
-                    rep.Body = "UnValued"
+                    rp.Type = pr.ReplyError
+                    rp.Body = "UnValued"
                     return
                 }
             } else {
-                rep.Type = ReplyError
+                rp.Type = pr.ReplyError
                 return
             }
         }
@@ -542,21 +283,21 @@ L:
 
         go func() {
 
-            call := NewNetCall()
+            call := pr.NewNetCall()
 
             call.Method = "Acceptor.Accept"
             call.Args = pl
             call.Reply = new(Reply)
-            call.Addr = v + ":" + gport
+            call.Addr = v + ":" + cfg.KeeperPort
 
-            gnet.Call(call)
+            prkp.Call(call)
 
             _ = <-call.Status
 
             rs := call.Reply.(*Reply)
 
             //fmt.Println("Acceptor.Accept", rs)
-            if rs.Type == ReplyOK {
+            if rs.Type == pr.ReplyOK {
                 accepted <- 1
             } else {
                 accepted <- 0
@@ -574,23 +315,21 @@ A:
             if s == 1 {
                 valued++
                 if 2*valued > len(kp) {
-                    rep.Type = ReplyOK
-                    watchmq <- &WatcherQueue{strings.Trim(path, "/"), nodeEvent, 0}
+                    rp.Type = pr.ReplyOK
+                    watchmq <- &WatcherQueue{strings.Trim(rqbody.Path, "/"), nodeEvent, 0}
                     break A
                 }
             } else if s == 0 {
                 unvalued++
                 if 2*unvalued > len(kp) {
-                    rep.Type = ReplyError
-                    rep.Body = "UnValued"
+                    rp.Type = pr.ReplyError
+                    rp.Body = "UnValued"
                     return
                 }
             } else {
-                rep.Type = ReplyError
+                rp.Type = pr.ReplyError
                 return
             }
         }
     }
-
-    return
 }

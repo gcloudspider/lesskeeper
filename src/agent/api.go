@@ -1,72 +1,67 @@
 package agent
 
 import (
-    "fmt"
-    "io"
-    "net/http"
-    //"io/ioutil"
-    //"net/rpc"
-    //"net"
     "../peer"
-    "encoding/json"
-    //"time"
+    "../utils"
+    "io"
+    "io/ioutil"
+    "net/http"
     "strings"
-    //"../data"
 )
 
-func ApiGen(w http.ResponseWriter, r *http.Request) {
+func ApiHandler(w http.ResponseWriter, r *http.Request) {
+
+    var rsp *peer.Reply
 
     defer func() {
-        //fmt.Println("defer close")
+        w.Header().Add("Connection", "close")
+
+        if rspj, err := utils.JsonEncode(rsp); err == nil {
+            io.WriteString(w, rspj)
+        }
+
         r.Body.Close()
     }()
 
-    var rs *peer.Reply
-    args := map[int][]byte{}
+    body, err := ioutil.ReadAll(r.Body)
+    if err != nil {
+        return
+    }
+    //fmt.Println(string(body))
 
-    method := strings.ToUpper(r.FormValue("func"))
-    /**
-      if method == "GETLOCAL" {
-      //fmt.Println(method)
-          if rn, err := data.NodeGet(r.FormValue("path")); err == nil {
-              rs.Body = rn.C
-              rs.Type = peer.ReplyString
-          } else {
-              rs.Type = peer.ReplyError
-          }
-
-          return
-      } */
-
-    args[0] = []byte(method)
-    args[1] = []byte(r.FormValue("path"))
-    if body := r.FormValue("body"); body != "" {
-        // TODO case ""
-        args[2] = []byte(body)
+    var req peer.Request
+    err = utils.JsonDecode(string(body), &req)
+    if err != nil {
+        return
     }
 
+    req.Method = strings.ToUpper(req.Method)
+    req.Body = string(body)
+    //fmt.Println(req)
     call := peer.NewNetCall()
-    call.Method = "Proposer.Process"
-    call.Addr = "127.0.0.1:9538"
-    call.Args = args
+    call.Method = "Proposer.Cmd"
+    call.Addr = "127.0.0.1:9529"
+    call.Args = req
     call.Reply = new(peer.Reply)
 
     pr.Call(call)
 
+    // TODO timeout
     st := <-call.Status
     close(call.Status)
 
-    rs = call.Reply.(*peer.Reply)
+    rsp = call.Reply.(*peer.Reply)
+    //fmt.Println(rsp)
 
     if st == 9 {
-        rs.Type = peer.ReplyTimeout
+        rsp.Type = peer.ReplyTimeout
     }
 
-    if rs.Err != nil {
-        rs.Type = peer.ReplyError
+    if rsp.Err != nil {
+        rsp.Type = peer.ReplyError
     }
 
-    if rs.Type == peer.ReplyWatch {
+    if rsp.Type == peer.ReplyWatch {
         /**
           for {
               t := time.Now()
@@ -106,17 +101,5 @@ func ApiGen(w http.ResponseWriter, r *http.Request) {
     goto RSP
 
 RSP:
-    w.Header().Add("Connection", "close")
-
-    if rsjson, err := json.Marshal(rs); err == nil {
-        //w.Header().Add("Content-Length", string(len(rsjson)))
-        io.WriteString(w, string(rsjson))
-    } else {
-        io.WriteString(w, "{\"Status\": \"ERR\"}")
-    }
-
-    if false {
-        fmt.Println("hi return")
-    }
     return
 }

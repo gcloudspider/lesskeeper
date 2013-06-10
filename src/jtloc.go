@@ -1,15 +1,16 @@
 package main
 
 import (
-    "bytes"
+    "./store"
+    "./utils"
+    "encoding/json"
     "fmt"
     "math/rand"
-    "os/exec"
-    "time"
-    //"net"
-    "encoding/json"
+    "net"
+    "regexp"
     "strconv"
     "strings"
+    "time"
 )
 
 var (
@@ -47,13 +48,13 @@ func JobTrackerLocal() {
             "node":   locNode,
         }
 
-        kpsLed, err = db.Get("ctl:led")
+        kpsLed, err = stor.Get("ctl:led")
         if err == nil && kpsLed != "" {
-            if addr, err := db.Hget("ls:"+kpsLed, "addr"); err == nil {
-                peer.Send(msg, addr+":"+cfg.KeeperPort)
+            if addr, err := stor.Hget("ls:"+kpsLed, "addr"); err == nil {
+                prbc.Send(msg, addr+":"+cfg.KeeperPort)
             }
         } else if rand.Intn(8) == 0 {
-            peer.Send(msg, bcip+":"+cfg.KeeperPort)
+            prbc.Send(msg, bcip+":"+cfg.KeeperPort)
         }
 
         // Paxos::P1a
@@ -67,20 +68,20 @@ func JobTrackerLocal() {
             fmt.Println("try to become new leader")
 
             // Paxos::P2c
-            if tid, _ := db.Get("ctl:tid"); len(tid) == 0 {
-                n, _ := db.Incrby("ctl:ltid", 1)
+            if tid, _ := stor.Get("ctl:tid"); len(tid) == 0 {
+                n, _ := stor.Incrby("ctl:ltid", 1)
                 //kpnoi, _ := strconv.Atoi(kpno)
                 kpnoi := len(kps)*n + kpsNum - 1
 
                 // One Proposal alive in rand seconds
-                db.Setex("ctl:tid", 3, strconv.Itoa(kpnoi))
+                stor.Setex("ctl:tid", 3, strconv.Itoa(kpnoi))
                 msg = map[string]string{
                     "action":          "LedNew",
                     "node":            locNode,
                     "ProposalNumber":  strconv.Itoa(kpnoi),
                     "ProposalContent": locNode,
                 }
-                peer.Send(msg, bcip+":"+cfg.KeeperPort)
+                prbc.Send(msg, bcip+":"+cfg.KeeperPort)
                 //fmt.Println(n, len(kps), kpno, n)
             }
         }
@@ -88,7 +89,7 @@ func JobTrackerLocal() {
         // Leader Cast
         if kpsLed != "" && kpsLed == locNode {
 
-            n, _ := db.Incrby("ctl:ltid", 0)
+            n, _ := stor.Incrby("ctl:ltid", 0)
             kpnoi, _ := strconv.Atoi(kpno)
             kpnoi = len(kps)*n + kpnoi - 1
 
@@ -97,8 +98,8 @@ func JobTrackerLocal() {
             //fmt.Println("kpslad", kpsLed, locNode, kpls)
 
             for k, v := range kpls {
-                addr, _ := db.Hget("ls:"+v, "addr")
-                if err := db.Exists("on:" + v); err == nil {
+                addr, _ := stor.Hget("ls:"+v, "addr")
+                if err := stor.Exists("on:" + v); err == nil {
                     kpsm = append(kpsm, "1,"+k+","+v+",1,"+addr)
                 } else {
                     kpsm = append(kpsm, "1,"+k+","+v+",0,"+addr)
@@ -114,7 +115,7 @@ func JobTrackerLocal() {
                 "kpls":        strings.Join(kpsm, ";"),
             }
             //fmt.Println(msg)
-            peer.Send(msg, bcip+":"+cfg.KeeperPort)
+            prbc.Send(msg, bcip+":"+cfg.KeeperPort)
         }
 
         //fmt.Println("JobTrackerLocal Checking")
@@ -124,43 +125,44 @@ func JobTrackerLocal() {
 
 func jobTrackerLocalRefresh() {
 
-    loc, _ = db.Hgetall("ctl:loc")
+    loc, _ = stor.Hgetall("ctl:loc")
 
     // if new node then ID setting
     if _, ok := loc["node"]; !ok {
-        loc["node"] = NewRandString(10)
-        db.Hset("ctl:loc", "node", loc["node"])
+        loc["node"] = utils.NewRandString(10)
+        stor.Hset("ctl:loc", "node", loc["node"])
     }
     locNode, _ = loc["node"]
 
     // Lesse time setting of Keeper's leader
     if _, ok := loc["tick"]; !ok {
         loc["tick"] = "2000"
-        db.Hset("ctl:loc", "tick", loc["tick"])
+        stor.Hset("ctl:loc", "tick", loc["tick"])
     }
 
     // Fetch local ip address
-    var out bytes.Buffer
-    cmd := "ip addr|grep inet|grep -v inet6|grep -v 127.0.|head -n1" +
-        "|awk ' {print $2}'|awk -F \"/\" '{print $1}'"
-    ec := exec.Command("sh", "-c", cmd)
-    ec.Stdout = &out
-    if err := ec.Run(); err == nil {
-        loc["addr"] = strings.TrimSpace(out.String())
-        db.Hset("ctl:loc", "addr", loc["addr"])
-        db.Hset("ctl:loc", "port", cfg.KeeperPort)
+    addrs, _ := net.InterfaceAddrs()
+    reg, _ := regexp.Compile(`^(.*)\.(.*)\.(.*)\.(.*)\/(.*)$`)
+    for _, addr := range addrs {
+        ips := reg.FindStringSubmatch(addr.String())
+        if len(ips) != 6 || (ips[1] == "127" && ips[2] == "0") {
+            continue
+        }
+        loc["addr"] = fmt.Sprintf("%s.%s.%s.%s", ips[1], ips[2], ips[3], ips[4])
+        stor.Hset("ctl:loc", "addr", loc["addr"])
+        stor.Hset("ctl:loc", "port", cfg.KeeperPort)
     }
 
     req["node"] = loc["node"]
     req["addr"] = loc["addr"]
     locNodeAddr = loc["addr"]
 
-    kpls, _ = db.Hgetall("kps")
+    kpls, _ = stor.Hgetall("kps")
     for k, v := range kpls {
 
         kps[v] = k
 
-        if addr, e := db.Hget("ls:"+v, "addr"); e == nil {
+        if addr, e := stor.Hget("ls:"+v, "addr"); e == nil {
             kp[v] = addr
         }
     }
@@ -172,27 +174,12 @@ func jobTrackerLocalRefresh() {
         St: "1",
     }
     if b, err := json.Marshal(host); err == nil {
-        pl := &Proposal{
+        pl := &store.NodeProposal{
             Key: "/kpr/local",
             Val: string(b),
         }
-        NodeSet(pl)
+        stor.NodeSet(pl)
     }
 
     //fmt.Println(kps)
-}
-
-func jobTrackLocalNodeID(length int) string {
-
-    chars := []byte("0123456789abcdefghijklmnopqrstuvwxyz")
-
-    rs := make([]byte, length)
-
-    rs[0] = chars[rand.Intn(len(chars)-10)+10]
-    for i := 1; i < length; i++ {
-        rs[i] = chars[rand.Intn(len(chars))]
-    }
-
-    //fmt.Println(jobTrackLocalNodeID, string(rs))
-    return string(rs)
 }

@@ -1,7 +1,6 @@
-package main
+package store
 
 import (
-    //"regexp"
     "encoding/json"
     "strconv"
     "strings"
@@ -31,6 +30,20 @@ const (
     EventNodeChildrenChanged = "14"
 )
 
+type NodeProposal struct {
+    Key string
+    Val string
+
+    VerNow uint64
+    VerSet uint64
+
+    Tag  string
+    Addr string
+
+    Valued   int
+    Unvalued int
+}
+
 //var pathRe = mustBuildRe(NodePathPat)
 
 type Node struct {
@@ -43,20 +56,6 @@ type Node struct {
     T   uint8 // Type
 }
 
-/*
-func mustBuildRe(path string) *regexp.Regexp {
-    return regexp.MustCompile(`^/$|^(/` + path + `+)+$`)
-}
-
-func checkPath(path string) uint64 {
-    if !pathRe.MatchString(path) {
-        return NodeTypeNil
-    }
-
-    return 0
-}
-*/
-
 func split(path string, p string) []string {
     if path == p {
         return []string{}
@@ -68,16 +67,16 @@ func join(parts []string, p string) string {
     return strings.Join(parts, p)
 }
 
-func NodeSet(pl *Proposal) uint16 {
+func (this *Store) NodeSet(pl *NodeProposal) uint16 {
 
     // Saving File
     in := strings.Trim(pl.Key, "/")
     p := split(in, "/")
     l := len(p)
     if pl.Val == NodeDelFlag {
-        db.Hdel(INodeFile+in, "v")
-        db.Hdel(INodeFile+in, "r")
-        db.Srem(INodeDir+join(p[0:l-1], "/"), NodeSepFile+p[l-1])
+        this.Hdel(INodeFile+in, "v")
+        this.Hdel(INodeFile+in, "r")
+        this.Srem(INodeDir+join(p[0:l-1], "/"), NodeSepFile+p[l-1])
         return 0
     }
 
@@ -85,26 +84,26 @@ func NodeSet(pl *Proposal) uint16 {
         "v": pl.Val,
         "r": strconv.FormatUint(pl.VerSet, 10),
     }
-    db.Hmset(INodeFile+in, item)
+    this.Hmset(INodeFile+in, item)
 
     // Saving DIRs
     for i := l - 1; i >= 0; i-- {
         in = join(p[0:i], "/")
         if i == len(p)-1 {
-            db.Sadd(INodeDir+in, NodeSepFile+p[i])
+            this.Sadd(INodeDir+in, NodeSepFile+p[i])
         } else {
-            db.Sadd(INodeDir+in, NodeSepDir+p[i])
+            this.Sadd(INodeDir+in, NodeSepDir+p[i])
         }
     }
 
     return 0
 }
 
-func NodeGet(path string) (*Node, error) {
+func (this *Store) NodeGet(path string) (*Node, error) {
 
     in := strings.Trim(path, "/")
 
-    item, e := db.Hgetall(INodeFile + in)
+    item, e := this.Hgetall(INodeFile + in)
     if e != nil {
         return nil, e
     }
@@ -123,7 +122,7 @@ func NodeGet(path string) (*Node, error) {
     return node, nil
 }
 
-func NodeGets(keys string) (string, error) {
+func (this *Store) NodeGets(keys string) (string, error) {
 
     ks := split(keys, " ")
 
@@ -133,7 +132,7 @@ func NodeGets(keys string) (string, error) {
 
         in := strings.Trim(path, "/")
 
-        item, e := db.Hgetall(INodeFile + in)
+        item, e := this.Hgetall(INodeFile + in)
         if e != nil {
             return "", e
         }
@@ -160,11 +159,11 @@ func NodeGets(keys string) (string, error) {
     return "", nil
 }
 
-func NodeList(path string) (string, error) {
+func (this *Store) NodeList(path string) (string, error) {
 
     in := strings.Trim(path, "/")
 
-    item, e := db.Smembers(INodeDir + in)
+    item, e := this.Smembers(INodeDir + in)
     if e != nil {
         return "", e
     }

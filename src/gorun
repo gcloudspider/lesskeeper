@@ -18,7 +18,7 @@ done
 
 rm -f h5keeper
 
-go build -ldflags "-w -s" -o h5keeper utils.go proposer.go acceptor.go cmdaction.go reply.go data.go jtloc.go main.go net.go node.go version.go agent.go
+go build -ldflags "-w -s" -o h5keeper proposer.go acceptor.go cmdaction.go jtloc.go main.go version.go
 
 ./h5keeper --prefix=/opt/src/m12/h5keeper
 

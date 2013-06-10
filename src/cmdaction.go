@@ -1,6 +1,8 @@
 package main
 
 import (
+    pr "./peer"
+    "./store"
     "encoding/json"
     "fmt"
     "math/rand"
@@ -11,7 +13,7 @@ import (
 
 type ActionRequst map[string]interface{}
 
-func CommandDispatchEvent(peer *NetUDP, p *NetPacket) {
+func CommandDispatchEvent(prbc *pr.NetUDP, p *pr.NetPacket) {
 
     var f interface{}
     err := json.Unmarshal(p.Body, &f)
@@ -95,8 +97,8 @@ func ActionNodeCast(req ActionRequst, addr string) {
         "addr":   addr,
         "status": "1",
     }
-    db.Hmset("ls:"+node.(string), set)
-    db.Setex("on:"+node.(string), 16, "1")
+    stor.Hmset("ls:"+node.(string), set)
+    stor.Setex("on:"+node.(string), 16, "1")
 
     // TODO
     host := KprHost{
@@ -105,11 +107,11 @@ func ActionNodeCast(req ActionRequst, addr string) {
         St: "1",
     }
     if b, err := json.Marshal(host); err == nil {
-        pl := &Proposal{
+        pl := &store.NodeProposal{
             Key: "/kpr/ls/" + node.(string),
             Val: string(b),
         }
-        NodeSet(pl)
+        stor.NodeSet(pl)
     }
 }
 
@@ -129,24 +131,24 @@ func ActionLedNew(req ActionRequst, addr string) {
     pval, _ := req["ProposalContent"]
     pvals := pval.(string)
 
-    vnum, _ := db.Get("ctl:voteid")
+    vnum, _ := stor.Get("ctl:voteid")
     vnumi, _ := strconv.Atoi(vnum)
-    vval, _ := db.Get("ctl:voteval")
+    vval, _ := stor.Get("ctl:voteval")
     // ACCEPT!
     if vnumi == 0 || vval == "" || vnumi == pnumi || (vval == "" && vnumi <= pnumi) {
         vnumi = pnumi
         vval = pvals
 
-        db.Set("ctl:voteid", strconv.Itoa(vnumi))
-        db.Setex("ctl:voteval", 2, vval)
+        stor.Set("ctl:voteid", strconv.Itoa(vnumi))
+        stor.Setex("ctl:voteval", 2, vval)
     }
 
     //
     rno := pnumi / len(kps)
-    lno, _ := db.Incrby("ctl:ltid", 0)
+    lno, _ := stor.Incrby("ctl:ltid", 0)
     //lnoi, _ := strconv.Atoi(lno)
     if lno < rno && node.(string) != locNode {
-        db.Incrby("ctl:ltid", (rno - lno))
+        stor.Incrby("ctl:ltid", (rno - lno))
     }
 
     msg := map[string]string{
@@ -156,7 +158,7 @@ func ActionLedNew(req ActionRequst, addr string) {
         "VerNew":        strconv.Itoa(vnumi),
         "AcceptContent": vval,
     }
-    peer.Send(msg, bcip+":"+cfg.KeeperPort)
+    prbc.Send(msg, bcip+":"+cfg.KeeperPort)
 }
 
 func ActionLedNewCb(req ActionRequst, addr string) {
@@ -175,13 +177,13 @@ func ActionLedNewCb(req ActionRequst, addr string) {
 
     aval, _ := req["AcceptContent"]
 
-    lno, _ := db.Incrby("ctl:ltid", 0)
+    lno, _ := stor.Incrby("ctl:ltid", 0)
     rno := anumi / len(kps)
     if lno < rno && node.(string) != locNode {
-        db.Incrby("ctl:ltid", (rno - lno))
+        stor.Incrby("ctl:ltid", (rno - lno))
     }
 
-    tid, _ := db.Get("ctl:tid")
+    tid, _ := stor.Get("ctl:tid")
     tidi, _ := strconv.Atoi(tid)
     if tidi == 0 {
         return
@@ -191,21 +193,21 @@ func ActionLedNewCb(req ActionRequst, addr string) {
     if tidi == anumi && locNode == aval.(string) {
         prok = "px:value:"
     } else if locNode != aval.(string) {
-        db.Expire("ctl:tid", rand.Intn(3)+1)
+        stor.Expire("ctl:tid", rand.Intn(3)+1)
     } else {
         prok = "px:unvalue:"
     }
 
     prok = prok + tid + ":" + anum.(string) + ":" + addr
-    db.Setex(prok, 7, "1")
+    stor.Setex(prok, 7, "1")
 
     fmt.Println("Checking if valued:", prok)
 
-    vs2, _ := db.Keys("ctl:*")
+    vs2, _ := stor.Keys("ctl:*")
     fmt.Println(vs2)
 
     // Valued
-    vs, _ := db.Keys("px:value:" + tid + ":*")
+    vs, _ := stor.Keys("px:value:" + tid + ":*")
     fmt.Println(vs)
     if 2*len(vs) > len(kps) {
         for _, v := range vs {
@@ -216,26 +218,26 @@ func ActionLedNewCb(req ActionRequst, addr string) {
                 "ValueNumber":  ls[3],
                 "ValueContent": locNode,
             }
-            peer.Send(msg, ls[4]+":"+cfg.KeeperPort)
+            prbc.Send(msg, ls[4]+":"+cfg.KeeperPort)
             //fmt.Println("Value:", msg)
         }
-        db.Expire("ctl:tid", rand.Intn(3)+1)
+        stor.Expire("ctl:tid", rand.Intn(3)+1)
 
         fmt.Println("Majory Valued")
         return
     }
 
     // UnValued
-    vs, _ = db.Keys("px:unvalue:" + tid + ":*")
+    vs, _ = stor.Keys("px:unvalue:" + tid + ":*")
     //fmt.Println(vs)
     if 2*len(vs) > len(kps) {
         // Prepare?
-        lno, _ = db.Incrby("ctl:ltid", 0)
+        lno, _ = stor.Incrby("ctl:ltid", 0)
         gno := len(kps)*lno + kpsNum - 1
         if gno > tidi {
-            lno, _ = db.Incrby("ctl:ltid", 1)
+            lno, _ = stor.Incrby("ctl:ltid", 1)
             gno = len(kps)*lno + kpsNum - 1
-            db.Setex("ctl:tid", rand.Intn(3)+1, strconv.Itoa(gno))
+            stor.Setex("ctl:tid", rand.Intn(3)+1, strconv.Itoa(gno))
 
             msg := map[string]string{
                 "action":          "LedNew",
@@ -243,9 +245,9 @@ func ActionLedNewCb(req ActionRequst, addr string) {
                 "ProposalNumber":  strconv.Itoa(gno),
                 "ProposalContent": locNode,
             }
-            peer.Send(msg, bcip+":"+cfg.KeeperPort)
+            prbc.Send(msg, bcip+":"+cfg.KeeperPort)
         } else {
-            db.Expire("ctl:tid", rand.Intn(3)+1)
+            stor.Expire("ctl:tid", rand.Intn(3)+1)
         }
 
         fmt.Println("Majory UnValued")
@@ -271,15 +273,15 @@ func ActionLedValue(req ActionRequst, addr string) {
         return
     }
 
-    anum, _ := db.Get("ctl:voteid")
+    anum, _ := stor.Get("ctl:voteid")
     anumi, _ := strconv.Atoi(anum)
-    aval, _ := db.Get("ctl:voteval")
+    aval, _ := stor.Get("ctl:voteval")
     if anumi == 0 {
         return
     }
 
     if anumi == valnumi && valnode.(string) == aval {
-        db.Setex("ctl:led", 12, aval)
+        stor.Setex("ctl:led", 12, aval)
     }
 
     fmt.Println("Value OK", anum, aval)
@@ -297,11 +299,11 @@ func ActionLedCast(req ActionRequst, addr string) {
     }
 
     if kpsLed != "" && kpsLed != node.(string) {
-        db.Del("ctl:led")
+        stor.Del("ctl:led")
         return
     }
 
-    db.Setex("ctl:led", 12, node.(string))
+    stor.Setex("ctl:led", 12, node.(string))
 
     if node.(string) == locNode {
         // TODO
@@ -309,12 +311,12 @@ func ActionLedCast(req ActionRequst, addr string) {
     }
 
     ///
-    ltid, _ := db.Incrby("ctl:ltid", 0)
+    ltid, _ := stor.Incrby("ctl:ltid", 0)
     vnum, _ := req["ValueNumber"]
     vnumi, _ := strconv.Atoi(vnum.(string))
     rtid := vnumi / len(kpls)
     if ltid < rtid && node.(string) != locNode {
-        db.Incrby("ctl:ltid", rtid-ltid)
+        stor.Incrby("ctl:ltid", rtid-ltid)
     }
 
     //
@@ -329,13 +331,13 @@ func ActionLedCast(req ActionRequst, addr string) {
 
     for k, v := range kpls {
         if str, ok := kplsn[k]; !ok {
-            db.Hdel("kps", k)
+            stor.Hdel("kps", k)
         } else {
             sp = strings.Split(str, ",")
             if sp[3] == "1" {
-                db.Setex("on:"+v, 16, "1")
+                stor.Setex("on:"+v, 16, "1")
             }
-            db.Hset("ls:"+v, "addr", sp[4])
+            stor.Hset("ls:"+v, "addr", sp[4])
             delete(kplsn, k)
         }
     }
@@ -343,131 +345,12 @@ func ActionLedCast(req ActionRequst, addr string) {
     for k, v := range kplsn {
         sp = strings.Split(v, ",")
         if sp[3] == "1" {
-            db.Setex("on:"+sp[2], 16, "1")
+            stor.Setex("on:"+sp[2], 16, "1")
         }
-        db.Hset("ls:"+sp[2], "addr", sp[4])
-        db.Hset("kps", k, sp[2])
+        stor.Hset("ls:"+sp[2], "addr", sp[4])
+        stor.Hset("kps", k, sp[2])
     }
 }
-
-/*
-func ActionItemPut(req ActionRequst, addr string) {
-
-    if !req.isset("node") || !req.isset("ItemKey") || !req.isset("ItemContent") || !req.isset("VerNew") {
-        return
-    }
-
-    if locNode == "" || kpsNum == 0 || kpsLed == "" {
-        return
-    }
-
-    node, _ := req["node"]
-    key, _ := req["ItemKey"]
-
-    vernew, _ := req["VerNew"]
-    msg := map[string]string{
-        "node": locNode,
-        "action":   "ItemPutCb",
-        "VerNew":   vernew.(string),
-        //"ctlid":    locNode,
-    }
-
-    valnew, _ := req["ItemContent"]
-    it := map[string]string{
-        "n": vernew.(string),
-        "v": valnew.(string),
-    }
-
-    db.Hmset("c:def:"+ key.(string), it) // TODO, waiting valued
-
-    // Ensure ctl:loctid to Max
-    vernewi, _ := strconv.Atoi(vernew.(string));
-    nnum := vernewi / len(kpls)
-    ltid, _ := db.Incrby("ctl:ltid", 0)
-    if ltid < nnum && locNode != node.(string) {
-        db.Incrby("ctl:ltid", nnum - ltid)
-    }
-
-    //fmt.Println("ActionItemPut", msg)
-    peer.Send(msg, addr +":"+ cfg.KeeperPort)
-}
-
-func ActionItemPutCb(req ActionRequst, addr string) {
-
-    if !req.isset("node") || !req.isset("VerNew") {
-        return
-    }
-
-    if locNode == "" || kpsNum == 0 {
-        return
-    }
-
-    node, _ := req["node"]
-    vernew, _ := req["VerNew"]
-
-    anumi, _ := strconv.Atoi(vernew.(string))
-    ltid, _ := db.Incrby("ctl:ltid", 0)
-    rnum := anumi / len(kpls)
-    if ltid < rnum && node.(string) != locNode {
-        db.Incrby("ctl:ltid", rnum - ltid)
-    }
-
-    key  := ""
-    tag  := ""
-    ipcb := ""
-    it := map[string]string{}
-
-    proposal_servlock.Lock()
-    if p, ok := proposals[vernew.(string)]; ok {
-
-        proposals[vernew.(string)].Yes++
-
-        if 2 * p.Yes > len(kpls) {
-
-            key = p.Key
-            tag = p.Tag
-            ipcb = p.Addr
-
-            it = map[string]string{
-                "n": vernew.(string),
-                "v": p.Val,
-            }
-        }
-    }
-    proposal_servlock.Unlock()
-
-
-    // SUCCESS, Callback status
-    if key != "" {
-        //fmt.Println("OK")
-        _ = db.Hmset("c:def:"+ key, it)
-
-        msg := map[string]string{
-            "action": "AgentItemPutCb",
-            "Tag": tag,
-            "status": "10",// TODO strconv.Itoa(ReplyOK),
-        }
-        //fmt.Println("ActionItemPutCb", msg)
-        peer.Send(msg,  ipcb+":"+ cfg.KeeperPort)
-    }
-}
-
-func ActionAgentItemPutCb(req ActionRequst, addr string) {
-
-    if tag, ok := req["Tag"]; ok {
-        if rs, ok := req["status"]; ok {
-            if status, err := strconv.Atoi(rs.(string)); err == nil {
-                agent.Lock.Lock()
-                if c, ok := agent.clients[tag.(string)]; ok {
-                    c.Sig <- status
-                }
-                //fmt.Println("ActionAgentItemPutCb", status)
-                agent.Lock.Unlock()
-            }
-        }
-    }
-}
-*/
 
 func (req ActionRequst) isset(key string) bool {
     if _, ok := req[key]; ok {

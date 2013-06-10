@@ -1,7 +1,8 @@
 package main
 
 import (
-    //"strconv"
+    pr "./peer"
+    "./store"
     "sync"
     "time"
 )
@@ -11,7 +12,7 @@ type Acceptor int
 var promiselock sync.Mutex
 var promises = map[string]*ProposalPromise{}
 
-func (p *Acceptor) Prepare(args *Proposal, rep *ProposalPromise) error {
+func (p *Acceptor) Prepare(args *store.NodeProposal, rep *ProposalPromise) error {
 
     //Println("Acceptor/Prepare", args)
 
@@ -32,7 +33,7 @@ func (p *Acceptor) Prepare(args *Proposal, rep *ProposalPromise) error {
     rep.VerNow = args.VerNow
     rep.VerSet = args.VerSet
 
-    n, _ := NodeGet(args.Key)
+    n, _ := stor.NodeGet(args.Key)
     if rep.VerNow != n.R {
         rep.VerNow = n.R
     }
@@ -53,9 +54,9 @@ func (p *Acceptor) Prepare(args *Proposal, rep *ProposalPromise) error {
     return nil
 }
 
-func (p *Acceptor) Accept(args *Proposal, rep *Reply) error {
+func (p *Acceptor) Accept(args *store.NodeProposal, rep *Reply) error {
 
-    rep.Type = ReplyError
+    rep.Type = pr.ReplyError
 
     promiselock.Lock()
     pl, _ := promises[args.Key]
@@ -69,9 +70,9 @@ func (p *Acceptor) Accept(args *Proposal, rep *Reply) error {
 
         // TODO
         // Method Dispatch
-        _ = NodeSet(args)
+        _ = stor.NodeSet(args)
 
-        rep.Type = ReplyOK
+        rep.Type = pr.ReplyOK
 
         promiselock.Lock()
         if _, ok := promises[args.Key]; ok {
