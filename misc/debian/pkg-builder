@@ -18,12 +18,15 @@ $cmd = "cd $basedir/deps/redis\n
     cp -rp ./src/redis-server $basedir/bin/hooto-keeper-store ";
 shell_exec($cmd);
 
-$ver = file_get_contents($basedir."/src/version.go");
-if (!preg_match("/VERSION\ +string\ +\=\ +\"(.*)\"/", $ver, $mat)) {
-    die("Can not get version");
+$verctn = file_get_contents($basedir."/src/version.go");
+if (!preg_match("/VERSION\ +string\ +\=\ +\"(.*)\"/", $verctn, $mat)) {
+    die("Can not get VERSION");
 }
 $ver = $mat[1];
-
+if (!preg_match("/RELEASE\ +string\ +\=\ +\"(.*)\"/", $verctn, $mat)) {
+    die("Can not get RELEASE");
+}
+$rel = $mat[1];
 
 $cmd = "rm -rf /tmp/hooto-keeper
 mkdir -p /tmp/hooto-keeper/DEBIAN";
