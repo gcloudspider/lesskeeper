@@ -1,20 +1,21 @@
 #! /bin/sh
 ### BEGIN INIT INFO
-# Provides:        hooto-keeper
-# Required-Start: $syslog $remote_fs
-# Required-Stop:  $syslog $remote_fs
-# Should-Start:   $local_fs
-# Should-Stop:    $local_fs
-# Default-Start:  2 3 4 5
-# Default-Stop:   0 1 6
-# Short-Description:    hooto-keeper - Hooto Keeper
-# Description:        hooto-keeper - Hooto Keeper
+# Provides:          hooto-keeper
+# Required-Start:    $syslog $remote_fs
+# Required-Stop:     $syslog $remote_fs
+# Should-Start:      $local_fs
+# Should-Stop:       $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: hooto-keeper - Hooto Keeper
+# Description:       hooto-keeper - Hooto Keeper
 ### END INIT INFO
 
 
 DAEMON=/opt/hooto/keeper/bin/hooto-keeper
 DAEMON_ARGS="--prefix=/opt/hooto/keeper"
 NAME=hooto-keeper
+NAMESTORE=hooto-keeper-store
 APPUSER=root
 
 set -e
@@ -22,6 +23,15 @@ set -e
 case "$1" in
     start)
         echo -n "Starting $NAME ...\n" 
+        
+        if pidof $NAME; then
+            echo -n "Started\n"
+            exit 0
+        fi
+        
+        if pidof $NAMESTORE; then
+            kill -9 `pidof $NAMESTORE`
+        fi
         
         # Start hooto-keeper!
         $DAEMON $DAEMON_ARGS > /dev/null 2>&1 &
@@ -35,12 +45,20 @@ case "$1" in
         ;;
 
     stop)
+        
         echo -n "Stopping $NAME ...\n"
         echo -n "$NAME PID: "
+        
         if pidof $NAME; then
             kill -9 `pidof $NAME`
-            sleep 2
+            sleep 1
         fi
+        
+        if pidof $NAMESTORE; then
+            kill -9 `pidof $NAMESTORE`
+            sleep 1
+        fi
+        
         echo -n "\nStopped\n"
         ;;
 
