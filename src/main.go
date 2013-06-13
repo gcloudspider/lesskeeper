@@ -7,6 +7,7 @@ import (
     "./store"
     "flag"
     "fmt"
+    "log"
     "math/rand"
     "net/http"
     "net/rpc"
@@ -32,6 +33,8 @@ var flag_prefix = flag.String("prefix", "", "the prefix folder path")
 
 var err error
 
+var lgr *log.Logger
+
 func main() {
 
     start := time.Now()
@@ -44,6 +47,13 @@ func main() {
     flag.Parse()
     if cfg, err = conf.NewConfig(*flag_prefix); err != nil {
         fmt.Println(err)
+        os.Exit(1)
+    }
+
+    logfile := cfg.Prefix + "/var/keeper.log"
+    if f, e := os.OpenFile(logfile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666); e == nil {
+        lgr = log.New(f, "", log.Ldate|log.Ltime)
+    } else {
         os.Exit(1)
     }
 
@@ -77,6 +87,12 @@ func main() {
     go JobTrackerLocal()
 
     fmt.Println("Started in", time.Since(start))
+
+    defer func() {
+        if err := recover(); err != nil {
+            lgr.Printf("main panic:", err)
+        }
+    }()
 
     // go checker
     for {

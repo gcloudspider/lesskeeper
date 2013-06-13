@@ -1,7 +1,6 @@
 package peer
 
 import (
-    "encoding/json"
     "errors"
 )
 
@@ -25,12 +24,6 @@ type Reply struct {
     Type  ReplyType `json:"type"`
     Body  string    `json:"body"`
     Elems []*Reply  `json:"elems"`
-}
-
-type ReplyNode struct {
-    P   string
-    C   string
-    R   uint64
 }
 
 // Str returns the reply value as a string or
@@ -148,13 +141,4 @@ func (r *Reply) String() string {
 
     // This should never execute
     return ""
-}
-
-func (r *Reply) JsonDecode(str string, rs interface{}) (err error) {
-
-    if err = json.Unmarshal([]byte(str), &rs); err != nil {
-        return err
-    }
-
-    return nil
 }
