@@ -7,9 +7,11 @@ import (
 type ReplyType uint8
 
 const (
-    ReplyOK      ReplyType = 0
-    ReplyError   ReplyType = 1
-    ReplyTimeout ReplyType = 2
+    ReplyOK           ReplyType = 0
+    ReplyError        ReplyType = 1
+    ReplyTimeout      ReplyType = 2
+    ReplyNotExist     ReplyType = 3
+    ReplyAccessDenied ReplyType = 4
 
     ReplyNil     ReplyType = 10
     ReplyInteger ReplyType = 11
