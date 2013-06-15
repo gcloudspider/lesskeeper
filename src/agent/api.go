@@ -3,13 +3,14 @@ package agent
 import (
     "../peer"
     "../utils"
+    //"fmt"
     "io"
     "io/ioutil"
     "net/http"
     "strings"
 )
 
-func ApiHandler(w http.ResponseWriter, r *http.Request) {
+func (this *Agent) ApiHandler(w http.ResponseWriter, r *http.Request) {
 
     var rsp *peer.Reply
 
@@ -36,6 +37,13 @@ func ApiHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     req.Method = strings.ToUpper(req.Method)
+    switch string(req.Method) {
+    case "LOCGET", "LOCSET", "LOCLIST", "LOCDEL":
+        rsp = new(peer.Reply)
+        this.apiLocalHandler(req.Method, string(body), rsp)
+        return
+    }
+
     req.Body = string(body)
     //fmt.Println(req)
     call := peer.NewNetCall()

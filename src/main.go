@@ -62,7 +62,8 @@ func main() {
     prbc = pr.NewUDPInstance()
     prbc.ListenAndServe(cfg.KeeperPort, CommandDispatchEvent)
 
-    agt = new(agent.Agent)
+    //agt = new(agent.Agent)
+    agt = agent.NewAgentInstance(cfg, stor)
     agt.Serve(cfg.AgentPort)
 
     //WatcherInitialize()

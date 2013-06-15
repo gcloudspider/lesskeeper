@@ -33,6 +33,7 @@ const (
 type NodeProposal struct {
     Key string
     Val string
+    Ttl int
 
     VerNow uint64
     VerSet uint64

@@ -135,34 +135,6 @@ func CmdList(rq *Request, rp *Reply) {
     }
 }
 
-/** TODO
-func CmdWatch(rq *Request, rp *Reply) {
-
-    rp.Type = pr.ReplyWatch
-
-    var rqbody struct {
-        Path string
-    }
-    e := utils.JsonDecode(rq.Body, &rqbody)
-    if e != nil {
-        return
-    }
-
-    path := strings.Trim(rqbody.Path, "/")
-
-    var w ProposalWatcher
-    var ok bool
-    watcherlock.Lock()
-    if w, ok = watches[path]; !ok {
-        w = map[string]int64{}
-        watches[path] = w
-    }
-
-    w[string(args[3])] = time.Now().Unix() + int64(rp.ttlen)
-    watcherlock.Unlock()
-}
-*/
-
 func CmdSet(rq *Request, rp *Reply, del bool) {
 
     var rqbody struct {
@@ -178,11 +150,6 @@ func CmdSet(rq *Request, rp *Reply, del bool) {
     }
 
     nodeEvent := store.EventNone
-
-    /* if ok, _ := regexp.MatchString("^([0-9a-zA-Z ._-]{1,64})$", rqbody.Path); !ok {
-        rp.Type = pr.ReplyError
-        return
-    } */
 
     node, _ := stor.NodeGet(rqbody.Path)
     if node.R > 0 {
