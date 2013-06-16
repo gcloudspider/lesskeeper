@@ -25,12 +25,6 @@ var (
     kpsLed      = ""
 )
 
-type KprHost struct {
-    Id  string
-    Ip  string
-    St  string
-}
-
 func JobTrackerLocal() {
 
     var err error
@@ -157,7 +151,7 @@ func jobTrackerLocalRefresh() {
     req["addr"] = loc["addr"]
     locNodeAddr = loc["addr"]
 
-    kpls, _ = stor.Hgetall("kps")
+    kpls, _ = stor.Hgetall("ctl:members")
     for k, v := range kpls {
 
         kps[v] = k
@@ -168,10 +162,10 @@ func jobTrackerLocalRefresh() {
     }
 
     // TODO
-    host := KprHost{
-        Id: locNode,
-        Ip: locNodeAddr,
-        St: "1",
+    host := store.Host{
+        Id:     locNode,
+        Addr:   locNodeAddr,
+        Status: 1,
     }
     if b, err := json.Marshal(host); err == nil {
         pl := &store.NodeProposal{

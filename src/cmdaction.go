@@ -101,10 +101,10 @@ func ActionNodeCast(req ActionRequst, addr string) {
     stor.Setex("on:"+node.(string), 16, "1")
 
     // TODO
-    host := KprHost{
-        Id: node.(string),
-        Ip: addr,
-        St: "1",
+    host := store.Host{
+        Id:     node.(string),
+        Addr:   addr,
+        Status: 1,
     }
     if b, err := json.Marshal(host); err == nil {
         pl := &store.NodeProposal{

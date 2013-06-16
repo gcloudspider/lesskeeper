@@ -80,6 +80,8 @@ func (p *Proposer) Cmd(rq *Request, rp *Reply) error {
         CmdSet(rq, rp, false)
     case "DEL":
         CmdSet(rq, rp, true)
+    case "KPRMEMSET":
+        CmdKprMemSet(rq, rp)
     }
 
     return nil
@@ -299,4 +301,33 @@ A:
             }
         }
     }
+}
+
+func CmdKprMemSet(rq *Request, rp *Reply) {
+
+    rp.Type = pr.ReplyError
+
+    var rqbody struct {
+        Addr string
+        Port string
+    }
+    e := utils.JsonDecode(rq.Body, &rqbody)
+    if e != nil {
+        return
+    }
+
+    if len(kpsLed) > 4 || rqbody.Addr != locNodeAddr {
+        return
+    }
+
+    msa, _ := stor.Hgetall("ctl:members")
+    if len(msa) > 0 {
+        return
+    }
+
+    if e := stor.Hset("ctl:members", "1", locNode); e != nil {
+        return
+    }
+
+    rp.Type = pr.ReplyOK
 }
