@@ -3,7 +3,6 @@ package agent
 import (
     "../peer"
     "../utils"
-    //"fmt"
     "io"
     "io/ioutil"
     "net/http"
@@ -41,6 +40,10 @@ func (this *Agent) ApiHandler(w http.ResponseWriter, r *http.Request) {
     case "LOCGET", "LOCSET", "LOCLIST", "LOCDEL":
         rsp = new(peer.Reply)
         this.apiLocalHandler(req.Method, string(body), rsp)
+        return
+    case "INFO":
+        rsp = new(peer.Reply)
+        this.apiInfoHandler(req.Method, string(body), rsp)
         return
     }
 
