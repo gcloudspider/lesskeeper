@@ -1,7 +1,7 @@
 package main
 
 import (
-    pr "./peer"
+    "./peer"
     "./store"
     "encoding/json"
     "fmt"
@@ -13,7 +13,7 @@ import (
 
 type ActionRequst map[string]interface{}
 
-func CommandDispatchEvent(prbc *pr.NetUDP, p *pr.NetPacket) {
+func CommandDispatchEvent(prbc *peer.NetUDP, p *peer.NetPacket) {
 
     var f interface{}
     err := json.Unmarshal(p.Body, &f)

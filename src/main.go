@@ -3,7 +3,7 @@ package main
 import (
     "./agent"
     "./conf"
-    pr "./peer"
+    "./peer"
     "./store"
     "flag"
     "fmt"
@@ -18,8 +18,8 @@ import (
 
 var stor store.Store
 
-var prbc *pr.NetUDP
-var prkp *pr.NetTCP
+var prbc *peer.NetUDP
+var prkp *peer.NetTCP
 
 var agt *agent.Agent
 
@@ -59,7 +59,7 @@ func main() {
 
     stor.Initialize(cfg)
 
-    prbc = pr.NewUDPInstance()
+    prbc = peer.NewUDPInstance()
     prbc.ListenAndServe(cfg.KeeperPort, CommandDispatchEvent)
 
     //agt = new(agent.Agent)
@@ -77,7 +77,7 @@ func main() {
 
     rpc.HandleHTTP()
 
-    prkp = pr.NewTCPInstance()
+    prkp = peer.NewTCPInstance()
     if err := prkp.Listen(cfg.KeeperPort); err != nil {
         fmt.Println(err)
         os.Exit(1)

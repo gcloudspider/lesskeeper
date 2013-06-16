@@ -1,7 +1,7 @@
 package main
 
 import (
-    pr "./peer"
+    "./peer"
     "./store"
     "./utils"
     "strings"
@@ -9,11 +9,11 @@ import (
     "time"
 )
 
-type Reply pr.Reply
+type Reply peer.Reply
 
 type Proposer int
 
-type Request pr.Request
+type Request peer.Request
 
 type ProposalPromise struct {
     VerNow, VerSet uint64
@@ -98,7 +98,7 @@ func CmdGet(rq *Request, rp *Reply) {
     }
 
     if node, e := stor.NodeGet(rqbody.Path); e == nil {
-        rp.Type = pr.ReplyString
+        rp.Type = peer.ReplyString
         rp.Body = node.C
     }
 }
@@ -114,7 +114,7 @@ func CmdGets(rq *Request, rp *Reply) {
     }
 
     if rs, e := stor.NodeGets(rqbody.Path); e == nil {
-        rp.Type = pr.ReplyString
+        rp.Type = peer.ReplyString
         rp.Body = rs
     }
 
@@ -132,7 +132,7 @@ func CmdList(rq *Request, rp *Reply) {
     }
 
     if rs, e := stor.NodeList(rqbody.Path); e == nil {
-        rp.Type = pr.ReplyString
+        rp.Type = peer.ReplyString
         rp.Body = rs
     }
 }
@@ -157,7 +157,7 @@ func CmdSet(rq *Request, rp *Reply, del bool) {
     if node.R > 0 {
         if node.C == rqbody.Val {
             //Println("same node", rqbody.Path)
-            rp.Type = pr.ReplyOK
+            rp.Type = peer.ReplyOK
             return
         }
         nodeEvent = store.EventNodeDataChanged
@@ -192,7 +192,7 @@ func CmdSet(rq *Request, rp *Reply, del bool) {
 
         go func() {
 
-            call := pr.NewNetCall()
+            call := peer.NewNetCall()
 
             call.Method = "Acceptor.Prepare"
             call.Args = pl
@@ -230,12 +230,12 @@ L:
             } else if s == 0 {
                 unvalued++
                 if 2*unvalued > len(kp) {
-                    rp.Type = pr.ReplyError
+                    rp.Type = peer.ReplyError
                     rp.Body = "UnValued"
                     return
                 }
             } else {
-                rp.Type = pr.ReplyError
+                rp.Type = peer.ReplyError
                 return
             }
         }
@@ -252,7 +252,7 @@ L:
 
         go func() {
 
-            call := pr.NewNetCall()
+            call := peer.NewNetCall()
 
             call.Method = "Acceptor.Accept"
             call.Args = pl
@@ -266,7 +266,7 @@ L:
             rs := call.Reply.(*Reply)
 
             //fmt.Println("Acceptor.Accept", rs)
-            if rs.Type == pr.ReplyOK {
+            if rs.Type == peer.ReplyOK {
                 accepted <- 1
             } else {
                 accepted <- 0
@@ -284,19 +284,19 @@ A:
             if s == 1 {
                 valued++
                 if 2*valued > len(kp) {
-                    rp.Type = pr.ReplyOK
+                    rp.Type = peer.ReplyOK
                     watchmq <- &WatcherQueue{strings.Trim(rqbody.Path, "/"), nodeEvent, 0}
                     break A
                 }
             } else if s == 0 {
                 unvalued++
                 if 2*unvalued > len(kp) {
-                    rp.Type = pr.ReplyError
+                    rp.Type = peer.ReplyError
                     rp.Body = "UnValued"
                     return
                 }
             } else {
-                rp.Type = pr.ReplyError
+                rp.Type = peer.ReplyError
                 return
             }
         }
@@ -305,7 +305,7 @@ A:
 
 func CmdKprMemSet(rq *Request, rp *Reply) {
 
-    rp.Type = pr.ReplyError
+    rp.Type = peer.ReplyError
 
     var rqbody struct {
         Addr string
@@ -329,5 +329,5 @@ func CmdKprMemSet(rq *Request, rp *Reply) {
         return
     }
 
-    rp.Type = pr.ReplyOK
+    rp.Type = peer.ReplyOK
 }

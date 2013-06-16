@@ -1,7 +1,7 @@
 package main
 
 import (
-    pr "./peer"
+    "./peer"
     "./store"
     "sync"
     "time"
@@ -56,7 +56,7 @@ func (p *Acceptor) Prepare(args *store.NodeProposal, rep *ProposalPromise) error
 
 func (p *Acceptor) Accept(args *store.NodeProposal, rep *Reply) error {
 
-    rep.Type = pr.ReplyError
+    rep.Type = peer.ReplyError
 
     promiselock.Lock()
     pl, _ := promises[args.Key]
@@ -72,7 +72,7 @@ func (p *Acceptor) Accept(args *store.NodeProposal, rep *Reply) error {
         // Method Dispatch
         _ = stor.NodeSet(args)
 
-        rep.Type = pr.ReplyOK
+        rep.Type = peer.ReplyOK
 
         promiselock.Lock()
         if _, ok := promises[args.Key]; ok {
