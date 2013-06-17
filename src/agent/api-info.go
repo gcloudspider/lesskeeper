@@ -7,13 +7,14 @@ import (
 )
 
 type KprInfo struct {
-    Leader  string                   `json:"leader"`
-    Members map[string]KprInfoMember `json:"members"`
-    Local   KprInfoLocal             `json:"local"`
+    Leader  string          `json:"leader"`
+    Vote    uint64          `json:"vote"`
+    Members []KprInfoMember `json:"members"`
+    Local   KprInfoLocal    `json:"local"`
 }
 type KprInfoMember struct {
     Id     string `json:"id"`
-    Number int    `json:"number"`
+    Seat   int    `json:"seat"`
     Addr   string `json:"addr"`
     Port   string `json:"port"`
     Status int    `json:"status"`
@@ -37,6 +38,13 @@ func (this *Agent) apiInfoHandler(method string, body string, rp *peer.Reply) {
         info.Leader = kprLed
     }
 
+    kprID, e := this.stor.Get("ctl:voteid")
+    if e == nil {
+        if rev, e := strconv.ParseUint(kprID, 10, 64); e == nil {
+            info.Vote = rev
+        }
+    }
+
     msa, _ := this.stor.Hgetall("ctl:members")
     if len(msa) > 0 {
 
@@ -57,28 +65,24 @@ func (this *Agent) apiInfoHandler(method string, body string, rp *peer.Reply) {
                 continue
             }
 
-            if info.Members == nil {
-                info.Members = map[string]KprInfoMember{}
-            }
-            kprNumber, _ := strconv.Atoi(k)
-            member.Number = kprNumber
+            kprSeat, _ := strconv.Atoi(k)
+            member.Seat = kprSeat
 
-            info.Members[v] = member
+            info.Members = append(info.Members, member)
         }
-
     }
 
     loc, e := this.stor.Hgetall("ctl:loc")
     if e == nil {
 
-        if _, ok := loc["node"]; ok {
-            info.Local.Id = loc["node"]
+        if val, ok := loc["node"]; ok {
+            info.Local.Id = val
         }
-        if _, ok := loc["addr"]; ok {
-            info.Local.Addr = loc["addr"]
+        if val, ok := loc["addr"]; ok {
+            info.Local.Addr = val
         }
-        if _, ok := loc["port"]; ok {
-            info.Local.KeeperPort = loc["port"]
+        if val, ok := loc["port"]; ok {
+            info.Local.KeeperPort = val
         }
     }
 
