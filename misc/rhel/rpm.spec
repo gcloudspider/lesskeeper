@@ -1,13 +1,13 @@
 %define app_home /opt/less/keeper
 
-Name: less-keeper
+Name: lesskeeper
 Version: x.y.z
 Release: 1%{?dist}
 Vendor: LessCompute.com
 Summary: Distributed coordination service
 License: Apache 2
 Group: Applications
-Source0: less-keeper-x.y.z.tar.gz
+Source0: lesskeeper-x.y.z.tar.gz
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}
 
 %description
@@ -22,8 +22,8 @@ install -d %{buildroot}%{app_home}/bin
 install -d %{buildroot}%{app_home}/etc
 install -d %{buildroot}%{_initrddir}
 
-install -m 0755 -p bin/less-keeper-store %{buildroot}%{app_home}/bin/less-keeper-store
-install -m 0755 -p bin/less-keeper %{buildroot}%{app_home}/bin/less-keeper
+install -m 0755 -p bin/lesskeeper-store %{buildroot}%{app_home}/bin/lesskeeper-store
+install -m 0755 -p bin/lesskeeper %{buildroot}%{app_home}/bin/lesskeeper
 cp -rp etc/keeper.json %{buildroot}%{app_home}/etc/keeper.json
 cp -rp etc/redis.conf %{buildroot}%{app_home}/etc/redis.conf
 
@@ -33,19 +33,19 @@ install -m 0755 -p misc/rhel/init.d-scripts %{buildroot}%{_initrddir}/%{name}
 
 %pre
 if [ $1 == 2 ]; then
-    service less-keeper stop
+    service lesskeeper stop
 fi
 
 %post
 
 if [ $1 == 2 ]; then
-    service less-keeper start
+    service lesskeeper start
 fi
 
 %preun
 if [ $1 = 0 ]; then
-    service less-keeper stop
-    chkconfig --del less-keeper
+    service lesskeeper stop
+    chkconfig --del lesskeeper
 fi
 
 %postun

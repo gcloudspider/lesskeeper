@@ -1,12 +1,16 @@
-Source: less-keeper
+Source: lesskeeper
 Section: Applications
 Priority: optional
 Maintainer: Eryx <evorui@gmail.com>
 Version: x.y.z
-Homepage: https://github.com/eryx/h5keeper
-Package: less-keeper
+Homepage: https://github.com/eryx/lesskeeper
+Package: lesskeeper
 Architecture: amd64
 Depends: adduser
 Description: Distributed coordination service
 
+#Package: lesskeeper-single
+#Architecture: amd64
+#Depends: lesskeeper
+#Description: Single-Node coordination service
 

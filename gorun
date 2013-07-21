@@ -16,9 +16,9 @@ for dir in $dirs; do
 done
 
 
-rm -f ./bin/less-keeper
+rm -f ./bin/lesskeeper
 
-go build -ldflags "-w -s" -o ./bin/less-keeper ./src/main.go ./src/proposer.go ./src/acceptor.go ./src/cmdaction.go ./src/jtloc.go ./src/version.go
+go build -ldflags "-w -s" -o ./bin/lesskeeper ./src/main.go ./src/proposer.go ./src/acceptor.go ./src/cmdaction.go ./src/jtloc.go ./src/version.go
 
-./bin/less-keeper --prefix=/opt/src/m12/less-keeper
+./bin/lesskeeper --prefix=/opt/src/m12/lesskeeper
 

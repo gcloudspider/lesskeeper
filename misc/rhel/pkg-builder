@@ -10,11 +10,13 @@ if ($arch != "x86_64") {
 
 $basedir = realpath(__DIR__.'/../..');
 
+$pkgname = "lesskeeper";
+
 $cmd = "
-killall less-keeper-store\n
+killall lesskeeper-store\n
 cd $basedir/deps/redis\n
 make\n
-cp -rp ./src/redis-server $basedir/bin/less-keeper-store ";
+cp -rp ./src/redis-server $basedir/bin/lesskeeper-store ";
 
 shell_exec($cmd);
 
@@ -29,23 +31,23 @@ rm -rf /tmp/rpm-tmp*
 rm -rf /tmp/{BUILD,RPMS,SOURCES,SPECS,SRPMS,BUILDROOT}
 mkdir -p /tmp/{BUILD,RPMS,SOURCES,SPECS,SRPMS,BUILDROOT}
 
-rm -rf /tmp/SOURCES/less-keeper*
+rm -rf /tmp/SOURCES/lesskeeper*
 
-mkdir -p /tmp/SOURCES/less-keeper-{$ver}/bin
-mkdir -p /tmp/SOURCES/less-keeper-{$ver}/var
-mkdir -p /tmp/SOURCES/less-keeper-{$ver}/etc
+mkdir -p /tmp/SOURCES/{$pkgname}-{$ver}/bin
+mkdir -p /tmp/SOURCES/{$pkgname}-{$ver}/var
+mkdir -p /tmp/SOURCES/{$pkgname}-{$ver}/etc
 
 
-cp -rp $basedir/bin/less-keeper /tmp/SOURCES/less-keeper-{$ver}/bin/
-cp -rp $basedir/bin/less-keeper-store /tmp/SOURCES/less-keeper-{$ver}/bin/
+cp -rp $basedir/bin/lesskeeper /tmp/SOURCES/{$pkgname}-{$ver}/bin/
+cp -rp $basedir/bin/lesskeeper-store /tmp/SOURCES/{$pkgname}-{$ver}/bin/
 
-cp -rp $basedir/misc/keeper/keeper.json /tmp/SOURCES/less-keeper-{$ver}/etc/keeper.json
-cp -rp $basedir/misc/redis/redis.conf /tmp/SOURCES/less-keeper-{$ver}/etc/redis.conf
+cp -rp $basedir/misc/keeper/keeper.json /tmp/SOURCES/{$pkgname}-{$ver}/etc/keeper.json
+cp -rp $basedir/misc/redis/redis.conf /tmp/SOURCES/{$pkgname}-{$ver}/etc/redis.conf
 
-cp -rp $basedir/misc /tmp/SOURCES/less-keeper-{$ver}/misc
+cp -rp $basedir/misc /tmp/SOURCES/{$pkgname}-{$ver}/misc
 
 cd /tmp/SOURCES
-tar zcf less-keeper-{$ver}.tar.gz less-keeper-{$ver}
+tar zcf {$pkgname}-{$ver}.tar.gz {$pkgname}-{$ver}
 ";
 shell_exec($cmd);
 
@@ -61,16 +63,16 @@ $mat = array(
     "/Source0:\ +(.*?)\n/",
 );
 $rep = array(
-    "Name: less-keeper\n",
+    "Name: lesskeeper\n",
     "Version: {$ver}\n",
     "Release: {$rele}\n",
-    "Source0: less-keeper-{$ver}.tar.gz\n",
+    "Source0: {$pkgname}-{$ver}.tar.gz\n",
 );
 $spec = preg_replace($mat, $rep, $spec);
 $spec = str_replace('%{?dist}', '', $spec);
 $spec = preg_replace("/Release:\ +(.*?)\n/", "Release: $1%{?dist}\n", $spec);
 
-$specfile = "/tmp/less-keeper-{$ver}-rpm.spec";
+$specfile = "/tmp/{$pkgname}-{$ver}-rpm.spec";
 file_put_contents($specfile, $spec);
 
 $cmd = "rpmbuild -ba $specfile";
@@ -90,7 +92,7 @@ if ($retint > 0) {
 }
 shell_exec($cmd);
 
-$cmd = "cp /tmp/RPMS/$arch/less-keeper-{$ver}* .";
+$cmd = "cp /tmp/RPMS/$arch/{$pkgname}-{$ver}* .";
 shell_exec($cmd);
 
 die(0);

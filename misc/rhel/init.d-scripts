@@ -1,20 +1,20 @@
 #!/bin/bash
 #
-# Startup script for the less-keeper
+# Startup script for the lesskeeper
 #
 # chkconfig:   345 85 15
-# description: less-keeper
-# processname: less-keeper
+# description: lesskeeper
+# processname: lesskeeper
 # config:
 
 # Source function library.
 . /etc/rc.d/init.d/functions
 
 
-DAEMON=/opt/less/keeper/bin/less-keeper
+DAEMON=/opt/less/keeper/bin/lesskeeper
 DAEMON_ARGS="--prefix=/opt/less/keeper"
-NAME=less-keeper
-NAMESTORE=less-keeper-store
+NAME=lesskeeper
+NAMESTORE=lesskeeper-store
 APPUSER=root
 
 set -e
@@ -30,9 +30,10 @@ case "$1" in
         
         if pidof $NAMESTORE; then
             kill -9 `pidof $NAMESTORE`
+            sleep 1
         fi
         
-        # Start less-keeper!
+        # Start lesskeeper!
         $DAEMON $DAEMON_ARGS > /dev/null 2>&1 &
         sleep 1
         echo -n -e "$NAME PID: "
