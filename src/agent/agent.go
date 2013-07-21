@@ -39,7 +39,7 @@ func (this *Agent) Serve(port string) {
 
     go func() {
 
-        http.HandleFunc("/h5keeper/api", this.ApiHandler)
+        http.HandleFunc("/lesskeeper/api", this.ApiHandler)
 
         s := &http.Server{
             Addr:           ":" + port,

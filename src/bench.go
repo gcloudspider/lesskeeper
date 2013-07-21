@@ -18,7 +18,7 @@ import (
 var threadnum = 100
 var threadflag = 0
 var l sync.Mutex
-var uriItem = "http://localhost:9529/h5keeper/api/item"
+var uriItem = "http://localhost:9529/lesskeeper/api/item"
 var maxnum = 10000
 
 var counter = 0
@@ -61,7 +61,7 @@ func main() {
        for i := 0; i < maxnum; i++ {
 
            body := bytes.NewBufferString("get key1\r\n")
-           req, err := http.NewRequest("PUT", "http://localhost:9529/h5keeper/api/item", body)
+           req, err := http.NewRequest("PUT", "http://localhost:9529/lesskeeper/api/item", body)
            if err != nil {
                fmt.Println("Error", err)
            }
@@ -113,7 +113,7 @@ func main() {
         if false {
             fmt.Println(body, vs)
         }
-        //_, _ = http.PostForm("http://localhost:9529/h5keeper/api/item", url.Values{"title": {"AAAAAAAAA"}, "content": {"BBBBB"}})
+        //_, _ = http.PostForm("http://localhost:9529/lesskeeper/api/item", url.Values{"title": {"AAAAAAAAA"}, "content": {"BBBBB"}})
 
         //time.Sleep(1e6)
     }

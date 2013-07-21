@@ -1,14 +1,13 @@
-%define app_home /opt/hooto/keeper
+%define app_home /opt/less/keeper
 
-Name: hooto-keeper
+Name: less-keeper
 Version: x.y.z
 Release: 1%{?dist}
-Vendor: Hooto
+Vendor: LessCompute.com
 Summary: Distributed coordination service
 License: Apache 2
 Group: Applications
-BuildRequires: gcc
-Source0: hooto-keeper-x.y.z.tar.gz
+Source0: less-keeper-x.y.z.tar.gz
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}
 
 %description
@@ -23,8 +22,8 @@ install -d %{buildroot}%{app_home}/bin
 install -d %{buildroot}%{app_home}/etc
 install -d %{buildroot}%{_initrddir}
 
-install -m 0755 -p bin/hooto-keeper-store %{buildroot}%{app_home}/bin/hooto-keeper-store
-install -m 0755 -p bin/hooto-keeper %{buildroot}%{app_home}/bin/hooto-keeper
+install -m 0755 -p bin/less-keeper-store %{buildroot}%{app_home}/bin/less-keeper-store
+install -m 0755 -p bin/less-keeper %{buildroot}%{app_home}/bin/less-keeper
 cp -rp etc/keeper.json %{buildroot}%{app_home}/etc/keeper.json
 cp -rp etc/redis.conf %{buildroot}%{app_home}/etc/redis.conf
 
@@ -34,19 +33,19 @@ install -m 0755 -p misc/rhel/init.d-scripts %{buildroot}%{_initrddir}/%{name}
 
 %pre
 if [ $1 == 2 ]; then
-    service hooto-keeper stop
+    service less-keeper stop
 fi
 
 %post
 
 if [ $1 == 2 ]; then
-    service hooto-keeper start
+    service less-keeper start
 fi
 
 %preun
 if [ $1 = 0 ]; then
-    service hooto-keeper stop
-    chkconfig --del hooto-keeper
+    service less-keeper stop
+    chkconfig --del less-keeper
 fi
 
 %postun

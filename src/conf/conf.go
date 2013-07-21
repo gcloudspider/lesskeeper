@@ -25,7 +25,7 @@ func NewConfig(prefix string) (Config, error) {
     var cfg Config
 
     if prefix == "" {
-        prefix = "/opt/hooto/keeper"
+        prefix = "/opt/less/keeper"
     }
     reg, _ := regexp.Compile("/+")
     cfg.Prefix = "/" + strings.Trim(reg.ReplaceAllString(prefix, "/"), "/")
@@ -51,11 +51,11 @@ func NewConfig(prefix string) (Config, error) {
             "config file invalid. (%s)", err.Error()))
     }
 
-    cfg.StoreServer = "hooto-keeper-store"
+    cfg.StoreServer = "less-keeper-store"
     store_server := cfg.Prefix + "/bin/" + cfg.StoreServer
     if _, err := os.Stat(store_server); err != nil && os.IsNotExist(err) {
         return cfg, errors.New(fmt.Sprintf("Error: "+
-            "hooto-keeper-store (%s) is not exists", store_server))
+            "less-keeper-store (%s) is not exists", store_server))
     }
 
     cfg.StoreNetwork = "unix"

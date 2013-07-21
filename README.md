@@ -1,7 +1,7 @@
 
 **THIS IS A DEVELOPMENT PREVIEW - DO NOT USE IT IN PRODUCTION!**
 
-## What is Hooto Keeper ?
+## What is Less Keeper ?
  * High reliable distributed coordination service
  * Similar to Google Chubby, Apache ZooKeeper
  * Open Source, lightweight implementation in Go

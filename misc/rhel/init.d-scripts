@@ -1,20 +1,20 @@
 #!/bin/bash
 #
-# Startup script for the hooto-keeper
+# Startup script for the less-keeper
 #
 # chkconfig:   345 85 15
-# description: hooto-keeper
-# processname: hooto-keeper
+# description: less-keeper
+# processname: less-keeper
 # config:
 
 # Source function library.
 . /etc/rc.d/init.d/functions
 
 
-DAEMON=/opt/hooto/keeper/bin/hooto-keeper
-DAEMON_ARGS="--prefix=/opt/hooto/keeper"
-NAME=hooto-keeper
-NAMESTORE=hooto-keeper-store
+DAEMON=/opt/less/keeper/bin/less-keeper
+DAEMON_ARGS="--prefix=/opt/less/keeper"
+NAME=less-keeper
+NAMESTORE=less-keeper-store
 APPUSER=root
 
 set -e
@@ -32,7 +32,7 @@ case "$1" in
             kill -9 `pidof $NAMESTORE`
         fi
         
-        # Start hooto-keeper!
+        # Start less-keeper!
         $DAEMON $DAEMON_ARGS > /dev/null 2>&1 &
         sleep 1
         echo -n -e "$NAME PID: "

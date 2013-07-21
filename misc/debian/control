@@ -1,10 +1,10 @@
-Source: hooto-keeper
+Source: less-keeper
 Section: Applications
 Priority: optional
 Maintainer: Eryx <evorui@gmail.com>
 Version: x.y.z
 Homepage: https://github.com/eryx/h5keeper
-Package: hooto-keeper
+Package: less-keeper
 Architecture: amd64
 Depends: adduser
 Description: Distributed coordination service

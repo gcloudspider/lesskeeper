@@ -15,7 +15,7 @@ $basedir = realpath(__DIR__.'/../..');
 
 $cmd = "cd $basedir/deps/redis\n
     make\n
-    cp -rp ./src/redis-server $basedir/bin/hooto-keeper-store ";
+    cp -rp ./src/redis-server $basedir/bin/less-keeper-store ";
 shell_exec($cmd);
 
 $verctn = file_get_contents($basedir."/src/version.go");
@@ -28,8 +28,8 @@ if (!preg_match("/RELEASE\ +string\ +\=\ +\"(.*)\"/", $verctn, $mat)) {
 }
 $rel = $mat[1];
 
-$cmd = "rm -rf /tmp/hooto-keeper
-mkdir -p /tmp/hooto-keeper/DEBIAN";
+$cmd = "rm -rf /tmp/less-keeper
+mkdir -p /tmp/less-keeper/DEBIAN";
 shell_exec($cmd);
 
 
@@ -44,27 +44,27 @@ $rep = array(
     "Architecture: amd64\n",
 );
 $control = preg_replace($mat, $rep, $control);
-file_put_contents("/tmp/hooto-keeper/DEBIAN/control", $control);
+file_put_contents("/tmp/less-keeper/DEBIAN/control", $control);
 
 
 $cmd = "
-mkdir -p /tmp/hooto-keeper/opt/hooto/keeper/bin
-cp $basedir/bin/* /tmp/hooto-keeper/opt/hooto/keeper/bin/
-cp $basedir/src/hooto-keeper /tmp/hooto-keeper/opt/hooto/keeper/bin/
+mkdir -p /tmp/less-keeper/opt/less/keeper/bin
+cp $basedir/bin/* /tmp/less-keeper/opt/less/keeper/bin/
+cp $basedir/src/less-keeper /tmp/less-keeper/opt/less/keeper/bin/
 
-mkdir -p /tmp/hooto-keeper/etc/init.d
-cp $basedir/misc/debian/init.d-scripts /tmp/hooto-keeper/etc/init.d/hooto-keeper
-chmod +rx /tmp/hooto-keeper/etc/init.d/hooto-keeper
+mkdir -p /tmp/less-keeper/etc/init.d
+cp $basedir/misc/debian/init.d-scripts /tmp/less-keeper/etc/init.d/less-keeper
+chmod +rx /tmp/less-keeper/etc/init.d/less-keeper
 
-mkdir -p /tmp/hooto-keeper/opt/hooto/keeper/etc
-cp $basedir/misc/redis/redis.conf /tmp/hooto-keeper/opt/hooto/keeper/etc/redis.conf
-cp $basedir/misc/keeper/keeper.json /tmp/hooto-keeper/opt/hooto/keeper/etc/keeper.json
+mkdir -p /tmp/less-keeper/opt/less/keeper/etc
+cp $basedir/misc/redis/redis.conf /tmp/less-keeper/opt/less/keeper/etc/redis.conf
+cp $basedir/misc/keeper/keeper.json /tmp/less-keeper/opt/less/keeper/etc/keeper.json
 
-mkdir -p /tmp/hooto-keeper/opt/hooto/keeper/var
+mkdir -p /tmp/less-keeper/opt/less/keeper/var
 
-dpkg -b /tmp/hooto-keeper/ $basedir/hooto-keeper_{$ver}-{$rel}_d6_amd64.deb
+dpkg -b /tmp/less-keeper/ $basedir/less-keeper_{$ver}-{$rel}_d6_amd64.deb
 
-rm -rf /tmp/hooto-keeper";
+rm -rf /tmp/less-keeper";
 
 shell_exec($cmd);
 
