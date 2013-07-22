@@ -102,14 +102,16 @@ func JobTrackerLocal() {
 
             //fmt.Println(kpsm)
 
-            msg := map[string]string{
-                "action":      "LedCast",
-                "node":        locNode,
-                "ValueNumber": strconv.Itoa(kpnoi),
-                "kpls":        strings.Join(kpsm, ";"),
+            if len(kpsm) > 0 {
+                msg := map[string]string{
+                    "action":      "LedCast",
+                    "node":        locNode,
+                    "ValueNumber": strconv.Itoa(kpnoi),
+                    "kpls":        strings.Join(kpsm, ";"),
+                }
+                //fmt.Println(msg)
+                prbc.Send(msg, bcip+":"+cfg.KeeperPort)
             }
-            //fmt.Println(msg)
-            prbc.Send(msg, bcip+":"+cfg.KeeperPort)
         }
 
         //fmt.Println("JobTrackerLocal Checking")

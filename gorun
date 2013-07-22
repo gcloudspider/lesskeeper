@@ -20,5 +20,6 @@ rm -f ./bin/lesskeeper
 
 go build -ldflags "-w -s" -o ./bin/lesskeeper ./src/main.go ./src/proposer.go ./src/acceptor.go ./src/cmdaction.go ./src/jtloc.go ./src/version.go
 
-./bin/lesskeeper --prefix=/opt/src/m12/lesskeeper
+prefix=`pwd`
+./bin/lesskeeper --prefix=${prefix}
 
