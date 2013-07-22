@@ -1,8 +1,8 @@
 package agent
 
 import (
+    "../../deps/lessgo/utils"
     "../peer"
-    "../utils"
     "io"
     "io/ioutil"
     "net/http"
@@ -94,12 +94,12 @@ func (this *Agent) ApiHandler(w http.ResponseWriter, r *http.Request) {
                   // update ttl to proposer
                   msg := map[string]string{
                       "action": "WatchLease",
-                      "host":   locNode,
+                      "host":   kprSef.Id,
                       "path":   c.WatchPath,
                       "ttl":    "6",
                   }
                   //Println(msg)
-                  if ip, ok := kp[kpsLed]; ok {
+                  if ip, ok := kp[kprLed]; ok {
                       peer.Send(msg, ip+":"+port)
                       //Println("Send", msg)
                   }

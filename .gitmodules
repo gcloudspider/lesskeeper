@@ -4,3 +4,6 @@
 [submodule "deps/radix"]
 	path = deps/radix
 	url = git://github.com/fzzy/radix.git
+[submodule "deps/lessgo"]
+	path = deps/lessgo
+	url = git@github.com:eryx/lessgo.git

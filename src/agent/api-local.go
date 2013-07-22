@@ -1,9 +1,9 @@
 package agent
 
 import (
+    "../../deps/lessgo/utils"
     "../peer"
     "../store"
-    "../utils"
 )
 
 func (this *Agent) apiLocalHandler(method string, body string, rp *peer.Reply) {

@@ -1,9 +1,9 @@
 package main
 
 import (
+    "../deps/lessgo/utils"
     "./peer"
     "./store"
-    "./utils"
     "strings"
     "sync"
     "time"
@@ -166,7 +166,7 @@ func CmdSet(rq *Request, rp *Reply, del bool) {
     }
 
     n, _ := stor.Incrby("ctl:ltid", 1)
-    vernewi := len(kps)*n + kpsNum - 1
+    vernewi := len(kprGrp)*n + kprSef.KprNum - 1
     verset := uint64(vernewi)
     //vernews := strconv.Itoa(vernewi)
 
@@ -316,7 +316,7 @@ func CmdKprMemSet(rq *Request, rp *Reply) {
         return
     }
 
-    if len(kpsLed) > 4 || rqbody.Addr != locNodeAddr {
+    if len(kprLed) > 4 || rqbody.Addr != kprSef.Addr {
         return
     }
 
@@ -325,7 +325,7 @@ func CmdKprMemSet(rq *Request, rp *Reply) {
         return
     }
 
-    if e := stor.Hset("ctl:members", "1", locNode); e != nil {
+    if e := stor.Hset("ctl:members", "1", kprSef.Id); e != nil {
         return
     }
 

@@ -16,7 +16,7 @@ func (p *Acceptor) Prepare(args *store.NodeProposal, rep *ProposalPromise) error
 
     //Println("Acceptor/Prepare", args)
 
-    if locNode == "" || kpsNum == 0 || kpsLed == "" {
+    if kprSef.Id == "" || kprSef.KprNum == 0 || kprLed == "" {
         return nil
     }
 

@@ -93,8 +93,14 @@ func ActionNodeCast(req ActionRequst, addr string) {
         return
     }
 
+    port, ok := req["port"]
+    if !ok {
+        return
+    }
+
     set := map[string]string{
         "addr":   addr,
+        "port":   port.(string),
         "status": "1",
     }
     stor.Hmset("ls:"+node.(string), set)
@@ -104,6 +110,7 @@ func ActionNodeCast(req ActionRequst, addr string) {
     host := store.Host{
         Id:     node.(string),
         Addr:   addr,
+        Port:   port.(string),
         Status: 1,
     }
     if b, err := json.Marshal(host); err == nil {
@@ -119,7 +126,7 @@ func ActionLedNew(req ActionRequst, addr string) {
     if !req.isset("node") || !req.isset("ProposalNumber") || !req.isset("ProposalContent") {
         return
     }
-    if kpsNum == 0 || kpsLed != "" {
+    if kprSef.KprNum == 0 || kprLed != "" {
         fmt.Println(req)
         return
     }
@@ -144,17 +151,17 @@ func ActionLedNew(req ActionRequst, addr string) {
     }
 
     //
-    rno := pnumi / len(kps)
+    rno := pnumi / len(kprGrp)
     lno, _ := stor.Incrby("ctl:ltid", 0)
     //lnoi, _ := strconv.Atoi(lno)
-    if lno < rno && node.(string) != locNode {
+    if lno < rno && node.(string) != kprSef.Id {
         stor.Incrby("ctl:ltid", (rno - lno))
     }
 
     msg := map[string]string{
         "action":        "LedNewCb",
-        "node":          locNode,
-        "kpno":          strconv.Itoa(kpsNum),
+        "node":          kprSef.Id,
+        "kpno":          strconv.Itoa(kprSef.KprNum),
         "VerNew":        strconv.Itoa(vnumi),
         "AcceptContent": vval,
     }
@@ -167,7 +174,7 @@ func ActionLedNewCb(req ActionRequst, addr string) {
         return
     }
 
-    if kpsNum == 0 {
+    if kprSef.KprNum == 0 {
         return
     }
 
@@ -178,8 +185,8 @@ func ActionLedNewCb(req ActionRequst, addr string) {
     aval, _ := req["AcceptContent"]
 
     lno, _ := stor.Incrby("ctl:ltid", 0)
-    rno := anumi / len(kps)
-    if lno < rno && node.(string) != locNode {
+    rno := anumi / len(kprGrp)
+    if lno < rno && node.(string) != kprSef.Id {
         stor.Incrby("ctl:ltid", (rno - lno))
     }
 
@@ -190,9 +197,9 @@ func ActionLedNewCb(req ActionRequst, addr string) {
     }
 
     var prok string
-    if tidi == anumi && locNode == aval.(string) {
+    if tidi == anumi && kprSef.Id == aval.(string) {
         prok = "px:value:"
-    } else if locNode != aval.(string) {
+    } else if kprSef.Id != aval.(string) {
         stor.Expire("ctl:tid", rand.Intn(3)+1)
     } else {
         prok = "px:unvalue:"
@@ -209,14 +216,14 @@ func ActionLedNewCb(req ActionRequst, addr string) {
     // Valued
     vs, _ := stor.Keys("px:value:" + tid + ":*")
     fmt.Println(vs)
-    if 2*len(vs) > len(kps) {
+    if 2*len(vs) > len(kprGrp) {
         for _, v := range vs {
             ls := strings.Split(v, ":")
             msg := map[string]string{
-                "node":         locNode,
+                "node":         kprSef.Id,
                 "action":       "LedValue",
                 "ValueNumber":  ls[3],
-                "ValueContent": locNode,
+                "ValueContent": kprSef.Id,
             }
             prbc.Send(msg, ls[4]+":"+cfg.KeeperPort)
             //fmt.Println("Value:", msg)
@@ -230,20 +237,20 @@ func ActionLedNewCb(req ActionRequst, addr string) {
     // UnValued
     vs, _ = stor.Keys("px:unvalue:" + tid + ":*")
     //fmt.Println(vs)
-    if 2*len(vs) > len(kps) {
+    if 2*len(vs) > len(kprGrp) {
         // Prepare?
         lno, _ = stor.Incrby("ctl:ltid", 0)
-        gno := len(kps)*lno + kpsNum - 1
+        gno := len(kprGrp)*lno + kprSef.KprNum - 1
         if gno > tidi {
             lno, _ = stor.Incrby("ctl:ltid", 1)
-            gno = len(kps)*lno + kpsNum - 1
+            gno = len(kprGrp)*lno + kprSef.KprNum - 1
             stor.Setex("ctl:tid", rand.Intn(3)+1, strconv.Itoa(gno))
 
             msg := map[string]string{
                 "action":          "LedNew",
-                "node":            locNode,
+                "node":            kprSef.Id,
                 "ProposalNumber":  strconv.Itoa(gno),
-                "ProposalContent": locNode,
+                "ProposalContent": kprSef.Id,
             }
             prbc.Send(msg, bcip+":"+cfg.KeeperPort)
         } else {
@@ -260,7 +267,7 @@ func ActionLedValue(req ActionRequst, addr string) {
         return
     }
 
-    if kpsNum == 0 {
+    if kprSef.KprNum == 0 {
         return
     }
 
@@ -268,8 +275,9 @@ func ActionLedValue(req ActionRequst, addr string) {
     valnumi, _ := strconv.Atoi(valnum.(string))
 
     valnode, _ := req["ValueContent"]
-    kpss, ok := kps[valnode.(string)]
-    if !ok || kpss == "" {
+
+    _, ok := kprGrp[valnode.(string)]
+    if !ok {
         return
     }
 
@@ -298,14 +306,14 @@ func ActionLedCast(req ActionRequst, addr string) {
         return
     }
 
-    if kpsLed != "" && kpsLed != node.(string) {
+    if kprLed != "" && kprLed != node.(string) {
         stor.Del("ctl:led")
         return
     }
 
     stor.Setex("ctl:led", 12, node.(string))
 
-    if node.(string) == locNode {
+    if node.(string) == kprSef.Id {
         // TODO
         //return
     }
@@ -314,8 +322,8 @@ func ActionLedCast(req ActionRequst, addr string) {
     ltid, _ := stor.Incrby("ctl:ltid", 0)
     vnum, _ := req["ValueNumber"]
     vnumi, _ := strconv.Atoi(vnum.(string))
-    rtid := vnumi / len(kpls)
-    if ltid < rtid && node.(string) != locNode {
+    rtid := vnumi / len(kprGrp)
+    if ltid < rtid && node.(string) != kprSef.Id {
         stor.Incrby("ctl:ltid", rtid-ltid)
     }
 
@@ -329,15 +337,15 @@ func ActionLedCast(req ActionRequst, addr string) {
         kplsn[rs2[1]] = v
     }
 
-    for k, v := range kpls {
+    for k, v := range kprGrp {
         if str, ok := kplsn[k]; !ok {
             stor.Hdel("kps", k)
         } else {
             sp = strings.Split(str, ",")
             if sp[3] == "1" {
-                stor.Setex("on:"+v, 16, "1")
+                stor.Setex("on:"+v.Id, 16, "1")
             }
-            stor.Hset("ls:"+v, "addr", sp[4])
+            stor.Hset("ls:"+v.Id, "addr", sp[4])
             delete(kplsn, k)
         }
     }

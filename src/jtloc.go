@@ -1,9 +1,8 @@
 package main
 
 import (
+    "../deps/lessgo/utils"
     "./store"
-    "./utils"
-    "encoding/json"
     "fmt"
     "math/rand"
     "net"
@@ -13,21 +12,21 @@ import (
     "time"
 )
 
+type KeeperHost struct {
+    store.Host
+    KprNum int
+}
+
 var (
-    ref         = 0
-    loc         = map[string]string{}
-    kps         = map[string]string{}
-    kpls        = map[string]string{}
-    req         = map[string]string{}
-    locNode     = ""
-    locNodeAddr = ""
-    kpsNum      = 0
-    kpsLed      = ""
+    kprLed = ""
+    kprGrp = map[string]KeeperHost{}
+    kprSef = KeeperHost{}
 )
 
 func JobTrackerLocal() {
 
     var err error
+    ref := 0
 
     for {
 
@@ -39,12 +38,13 @@ func JobTrackerLocal() {
         // broadcast self-info
         msg := map[string]string{
             "action": "NodeCast",
-            "node":   locNode,
+            "node":   kprSef.Id,
+            "port":   kprSef.Port,
         }
 
-        kpsLed, err = stor.Get("ctl:led")
-        if err == nil && kpsLed != "" {
-            if addr, err := stor.Hget("ls:"+kpsLed, "addr"); err == nil {
+        kprLed, err = stor.Get("ctl:led")
+        if err == nil && kprLed != "" {
+            if addr, err := stor.Hget("ls:"+kprLed, "addr"); err == nil {
                 prbc.Send(msg, addr+":"+cfg.KeeperPort)
             }
         } else if rand.Intn(8) == 0 {
@@ -53,27 +53,22 @@ func JobTrackerLocal() {
 
         // Paxos::P1a
         // try to become a leader
-        kpno, _ := kps[locNode]
-        if len(kpno) > 0 {
-            kpsNum, _ = strconv.Atoi(kpno)
-        }
-        if len(kpsLed) == 0 && kpsNum > 0 {
+        if len(kprLed) == 0 && kprSef.KprNum > 0 {
 
             fmt.Println("try to become new leader")
 
             // Paxos::P2c
             if tid, _ := stor.Get("ctl:tid"); len(tid) == 0 {
                 n, _ := stor.Incrby("ctl:ltid", 1)
-                //kpnoi, _ := strconv.Atoi(kpno)
-                kpnoi := len(kps)*n + kpsNum - 1
+                kpnoi := len(kprGrp)*n + kprSef.KprNum - 1
 
                 // One Proposal alive in rand seconds
                 stor.Setex("ctl:tid", 3, strconv.Itoa(kpnoi))
                 msg = map[string]string{
                     "action":          "LedNew",
-                    "node":            locNode,
+                    "node":            kprSef.Id,
                     "ProposalNumber":  strconv.Itoa(kpnoi),
-                    "ProposalContent": locNode,
+                    "ProposalContent": kprSef.Id,
                 }
                 prbc.Send(msg, bcip+":"+cfg.KeeperPort)
                 //fmt.Println(n, len(kps), kpno, n)
@@ -81,22 +76,20 @@ func JobTrackerLocal() {
         }
 
         // Leader Cast
-        if kpsLed != "" && kpsLed == locNode {
+        if kprLed != "" && kprLed == kprSef.Id {
 
             n, _ := stor.Incrby("ctl:ltid", 0)
-            kpnoi, _ := strconv.Atoi(kpno)
-            kpnoi = len(kps)*n + kpnoi - 1
-
+            kpnoi := len(kprGrp)*n + kprSef.KprNum - 1
             kpsm := []string{}
 
-            //fmt.Println("kpslad", kpsLed, locNode, kpls)
+            //fmt.Println("kpslad", kprLed, kprSef.Id, kpls)
 
-            for k, v := range kpls {
-                addr, _ := stor.Hget("ls:"+v, "addr")
-                if err := stor.Exists("on:" + v); err == nil {
-                    kpsm = append(kpsm, "1,"+k+","+v+",1,"+addr)
+            for _, v := range kprGrp {
+                //addr, _ := stor.Hget("ls:"+v, "addr")
+                if err := stor.Exists("on:" + v.Id); err == nil {
+                    kpsm = append(kpsm, "1,"+strconv.Itoa(v.KprNum)+","+v.Id+",1,"+v.Addr)
                 } else {
-                    kpsm = append(kpsm, "1,"+k+","+v+",0,"+addr)
+                    kpsm = append(kpsm, "1,"+strconv.Itoa(v.KprNum)+","+v.Id+",0,"+v.Addr)
                 }
             }
 
@@ -105,7 +98,7 @@ func JobTrackerLocal() {
             if len(kpsm) > 0 {
                 msg := map[string]string{
                     "action":      "LedCast",
-                    "node":        locNode,
+                    "node":        kprSef.Id,
                     "ValueNumber": strconv.Itoa(kpnoi),
                     "kpls":        strings.Join(kpsm, ";"),
                 }
@@ -121,20 +114,21 @@ func JobTrackerLocal() {
 
 func jobTrackerLocalRefresh() {
 
-    loc, _ = stor.Hgetall("ctl:loc")
+    loc, _ := stor.Hgetall("ctl:loc")
 
     // if new node then ID setting
-    if _, ok := loc["node"]; !ok {
-        loc["node"] = utils.NewRandString(10)
-        stor.Hset("ctl:loc", "node", loc["node"])
+    if id, ok := loc["node"]; !ok {
+        kprSef.Id = utils.StringNewRand(10)
+        stor.Hset("ctl:loc", "node", kprSef.Id)
+    } else {
+        kprSef.Id = id
     }
-    locNode, _ = loc["node"]
 
     // Lesse time setting of Keeper's leader
-    if _, ok := loc["tick"]; !ok {
+    /** TODO if _, ok := loc["tick"]; !ok {
         loc["tick"] = "2000"
         stor.Hset("ctl:loc", "tick", loc["tick"])
-    }
+    } */
 
     // Fetch local ip address
     addrs, _ := net.InterfaceAddrs()
@@ -144,38 +138,61 @@ func jobTrackerLocalRefresh() {
         if len(ips) != 6 || (ips[1] == "127" && ips[2] == "0") {
             continue
         }
-        loc["addr"] = fmt.Sprintf("%s.%s.%s.%s", ips[1], ips[2], ips[3], ips[4])
-        stor.Hset("ctl:loc", "addr", loc["addr"])
+        kprSef.Addr = fmt.Sprintf("%s.%s.%s.%s", ips[1], ips[2], ips[3], ips[4])
+
+        stor.Hset("ctl:loc", "addr", kprSef.Addr)
         stor.Hset("ctl:loc", "port", cfg.KeeperPort)
     }
+    kprSef.Port = cfg.KeeperPort
 
-    req["node"] = loc["node"]
-    req["addr"] = loc["addr"]
-    locNodeAddr = loc["addr"]
+    ms, _ := stor.Hgetall("ctl:members")
+    for k, _ := range kprGrp {
 
-    kpls, _ = stor.Hgetall("ctl:members")
-    for k, v := range kpls {
+        for _, v2 := range ms {
 
-        kps[v] = k
+            if k == v2 {
+                break
+            }
+        }
 
-        if addr, e := stor.Hget("ls:"+v, "addr"); e == nil {
-            kp[v] = addr
+        delete(kprGrp, k)
+    }
+
+    for k, v := range ms {
+
+        if _, ok := kprGrp[v]; !ok {
+            rs, _ := stor.NodeGet("/kpr/ls/" + v)
+            var node KeeperHost
+            err := utils.JsonDecode(rs.C, &node)
+            if err == nil {
+                node.KprNum, _ = strconv.Atoi(k)
+                kprGrp[v] = node
+            }
+        }
+
+        if v2, ok := kprGrp[kprSef.Id]; ok && kprSef.KprNum != v2.KprNum {
+            kprSef.KprNum = v2.KprNum
         }
     }
 
     // TODO
     host := store.Host{
-        Id:     locNode,
-        Addr:   locNodeAddr,
+        Id:     kprSef.Id,
+        Addr:   kprSef.Addr,
+        Port:   cfg.KeeperPort,
         Status: 1,
     }
-    if b, err := json.Marshal(host); err == nil {
+    if b, err := utils.JsonEncode(host); err == nil {
         pl := &store.NodeProposal{
             Key: "/kpr/local",
-            Val: string(b),
+            Val: b,
         }
         stor.NodeSet(pl)
     }
 
-    //fmt.Println(kps)
+    // Every Keeper Instance, Default as Single-Node Type
+    if len(kprGrp) == 0 {
+
+        stor.Hset("ctl:members", "1", kprSef.Id)
+    }
 }

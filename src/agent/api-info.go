@@ -1,8 +1,8 @@
 package agent
 
 import (
+    "../../deps/lessgo/utils"
     "../peer"
-    "../utils"
     "strconv"
 )
 
