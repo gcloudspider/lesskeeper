@@ -23,10 +23,6 @@ if (!preg_match("/VERSION\ +string\ +\=\ +\"(.*)\"/", $verctn, $mat)) {
     die("Can not get VERSION");
 }
 $ver = $mat[1];
-if (!preg_match("/RELEASE\ +string\ +\=\ +\"(.*)\"/", $verctn, $mat)) {
-    die("Can not get RELEASE");
-}
-$rel = $mat[1];
 
 $pkgname = "lesskeeper";
 

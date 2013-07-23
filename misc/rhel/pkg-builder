@@ -2,6 +2,9 @@
 
 <?php
 
+$opt = getopt("r:");
+$rel = isset($opt['r']) ? intval($opt['r']) : '1';
+
 $arch = trim(shell_exec("arch"));
 
 if ($arch != "x86_64") {
@@ -55,7 +58,7 @@ $os = "el6";
 
 $file = "{$basedir}/misc/rhel/rpm.spec";
 $spec = file_get_contents($file);
-$rele = "1";
+
 $mat = array(
     "/Name:\ +(.*?)\n/",
     "/Version:\ +(.*?)\n/",
@@ -65,7 +68,7 @@ $mat = array(
 $rep = array(
     "Name: lesskeeper\n",
     "Version: {$ver}\n",
-    "Release: {$rele}\n",
+    "Release: {$rel}\n",
     "Source0: {$pkgname}-{$ver}.tar.gz\n",
 );
 $spec = preg_replace($mat, $rep, $spec);
