@@ -27,7 +27,13 @@ $ver = $mat[1];
 $pkgname = "lesskeeper";
 
 $cmd = "rm -rf /tmp/{$pkgname}
-mkdir -p /tmp/{$pkgname}/DEBIAN";
+mkdir -p /tmp/{$pkgname}/DEBIAN
+cp $basedir/misc/debian/postinst /tmp/{$pkgname}/DEBIAN/postinst
+cp $basedir/misc/debian/postrm /tmp/{$pkgname}/DEBIAN/postrm
+cp $basedir/misc/debian/preinst /tmp/{$pkgname}/DEBIAN/preinst
+cp $basedir/misc/debian/prerm /tmp/{$pkgname}/DEBIAN/prerm
+
+";
 shell_exec($cmd);
 
 
@@ -59,7 +65,7 @@ cp $basedir/misc/keeper/keeper.json /tmp/{$pkgname}/opt/less/keeper/etc/keeper.j
 
 mkdir -p /tmp/{$pkgname}/opt/less/keeper/var
 
-dpkg -b /tmp/{$pkgname}/ $basedir/{$pkgname}_{$ver}-{$rel}_d6_amd64.deb
+dpkg -b /tmp/{$pkgname}/ ~/{$pkgname}_{$ver}-{$rel}_d6_amd64.deb
 
 rm -rf /tmp/{$pkgname}";
 

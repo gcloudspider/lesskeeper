@@ -16,7 +16,6 @@ DAEMON=/opt/less/keeper/bin/lesskeeper
 DAEMON_ARGS="--prefix=/opt/less/keeper"
 NAME=lesskeeper
 NAMESTORE=lesskeeper-store
-APPUSER=root
 
 set -e
 
@@ -36,6 +35,7 @@ case "$1" in
         
         # Start lesskeeper!
         $DAEMON $DAEMON_ARGS > /dev/null 2>&1 &
+        #start-stop-daemon --start --quiet --umask 007 --chuid lesskeeper:lesskeeper --exec $DAEMON -- $DAEMON_ARGS > /dev/null 2>&1 &
         sleep 2
         echo -n "$NAME PID: "
         if pidof $NAME; then

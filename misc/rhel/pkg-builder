@@ -95,7 +95,7 @@ if ($retint > 0) {
 }
 shell_exec($cmd);
 
-$cmd = "cp /tmp/RPMS/$arch/{$pkgname}-{$ver}* .";
+$cmd = "cp /tmp/RPMS/$arch/{$pkgname}-{$ver}*.rpm ~/";
 shell_exec($cmd);
 
 die(0);

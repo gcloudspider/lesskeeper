@@ -9,8 +9,3 @@ Architecture: amd64
 Depends: adduser
 Description: Distributed coordination service
 
-#Package: lesskeeper-single
-#Architecture: amd64
-#Depends: lesskeeper
-#Description: Single-Node coordination service
-
