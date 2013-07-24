@@ -1,4 +1,6 @@
 %define app_home /opt/less/keeper
+%define app_user lesskeeper
+%define app_grp  lesskeeper
 
 Name: lesskeeper
 Version: x.y.z
@@ -9,6 +11,9 @@ License: Apache 2
 Group: Applications
 Source0: lesskeeper-x.y.z.tar.gz
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}
+
+Requires(pre):  shadow-utils
+Requires(post): chkconfig
 
 %description
 %prep
@@ -30,22 +35,33 @@ cp -rp etc/redis.conf %{buildroot}%{app_home}/etc/redis.conf
 install -m 0755 -p misc/rhel/init.d-scripts %{buildroot}%{_initrddir}/%{name}
 
 %clean
+rm -rf %{buildroot}
 
 %pre
+# Add the "lesskeeper" user
+getent group %{app_grp} >/dev/null || groupadd -r %{app_grp}
+getent passwd %{app_user} >/dev/null || \
+    useradd -r -g %{app_grp} -s /sbin/nologin \
+    -d %{app_home} -c "lesskeeper user"  %{app_user}
+
 if [ $1 == 2 ]; then
     service lesskeeper stop
 fi
 
 %post
+# Register the lesskeeper service
+if [ $1 -eq 1 ]; then
+    /sbin/chkconfig --add lesskeeper
+fi
 
-if [ $1 == 2 ]; then
+if [ $1 -ge 1 ]; then
     service lesskeeper start
 fi
 
 %preun
 if [ $1 = 0 ]; then
-    service lesskeeper stop
-    chkconfig --del lesskeeper
+    /sbin/service lesskeeper stop  > /dev/null 2>&1
+    /sbin/chkconfig --del lesskeeper
 fi
 
 %postun
@@ -53,6 +69,7 @@ fi
 %files
 %defattr(-,root,root,-)
 %dir %{app_home}
+
 %{_initrddir}/%{name}
 %config(noreplace) %{app_home}/etc/keeper.json
 %config(noreplace) %{app_home}/etc/redis.conf
