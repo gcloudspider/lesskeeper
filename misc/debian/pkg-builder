@@ -32,7 +32,6 @@ cp $basedir/misc/debian/postinst /tmp/{$pkgname}/DEBIAN/postinst
 cp $basedir/misc/debian/postrm /tmp/{$pkgname}/DEBIAN/postrm
 cp $basedir/misc/debian/preinst /tmp/{$pkgname}/DEBIAN/preinst
 cp $basedir/misc/debian/prerm /tmp/{$pkgname}/DEBIAN/prerm
-
 ";
 shell_exec($cmd);
 
