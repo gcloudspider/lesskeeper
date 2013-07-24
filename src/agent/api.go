@@ -27,7 +27,6 @@ func (this *Agent) ApiHandler(w http.ResponseWriter, r *http.Request) {
     if err != nil {
         return
     }
-    //fmt.Println(string(body))
 
     var req peer.Request
     err = utils.JsonDecode(string(body), &req)
@@ -51,7 +50,7 @@ func (this *Agent) ApiHandler(w http.ResponseWriter, r *http.Request) {
     //fmt.Println(req)
     call := peer.NewNetCall()
     call.Method = "Proposer.Cmd"
-    call.Addr = "127.0.0.1:9529"
+    call.Addr = "127.0.0.1:" + this.cfg.KeeperPort
     call.Args = req
     call.Reply = new(peer.Reply)
 

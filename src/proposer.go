@@ -179,16 +179,15 @@ func CmdSet(rq *Request, rp *Reply, del bool) {
     pl.Unvalued = 0
 
     proposals[verset] = pl
-    //fmt.Println("PUT Acceptor.Prepare", pl)
 
-    promised := make(chan uint8, len(kp))
+    promised := make(chan uint8, len(kprGrp))
     go func() {
         time.Sleep(30e9)
         promised <- 9
     }()
 
     // Acceptor.Prepare
-    for _, v := range kp {
+    for _, v := range kprGrp {
 
         go func() {
 
@@ -197,7 +196,7 @@ func CmdSet(rq *Request, rp *Reply, del bool) {
             call.Method = "Acceptor.Prepare"
             call.Args = pl
             call.Reply = new(ProposalPromise)
-            call.Addr = v + ":" + cfg.KeeperPort
+            call.Addr = v.Addr + ":" + cfg.KeeperPort
 
             prkp.Call(call)
 
@@ -210,8 +209,6 @@ func CmdSet(rq *Request, rp *Reply, del bool) {
                 promised <- 0
             }
         }()
-
-        //fmt.Println(k, v)
     }
 
     valued := 0
@@ -223,13 +220,13 @@ L:
         case s := <-promised:
             if s == 1 {
                 valued++
-                if 2*valued > len(kp) {
+                if 2*valued > len(kprGrp) {
                     //fmt.Println("Valued")
                     break L
                 }
             } else if s == 0 {
                 unvalued++
-                if 2*unvalued > len(kp) {
+                if 2*unvalued > len(kprGrp) {
                     rp.Type = peer.ReplyError
                     rp.Body = "UnValued"
                     return
@@ -242,13 +239,13 @@ L:
     }
 
     // Acceptor.Accept
-    accepted := make(chan uint8, len(kp))
+    accepted := make(chan uint8, len(kprGrp))
     go func() {
         time.Sleep(30e9)
         accepted <- 9
     }()
 
-    for _, v := range kp {
+    for _, v := range kprGrp {
 
         go func() {
 
@@ -257,7 +254,7 @@ L:
             call.Method = "Acceptor.Accept"
             call.Args = pl
             call.Reply = new(Reply)
-            call.Addr = v + ":" + cfg.KeeperPort
+            call.Addr = v.Addr + ":" + cfg.KeeperPort
 
             prkp.Call(call)
 
@@ -283,14 +280,14 @@ A:
         case s := <-accepted:
             if s == 1 {
                 valued++
-                if 2*valued > len(kp) {
+                if 2*valued > len(kprGrp) {
                     rp.Type = peer.ReplyOK
                     watchmq <- &WatcherQueue{strings.Trim(rqbody.Path, "/"), nodeEvent, 0}
                     break A
                 }
             } else if s == 0 {
                 unvalued++
-                if 2*unvalued > len(kp) {
+                if 2*unvalued > len(kprGrp) {
                     rp.Type = peer.ReplyError
                     rp.Body = "UnValued"
                     return

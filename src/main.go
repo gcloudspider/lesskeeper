@@ -25,8 +25,6 @@ var agt *agent.Agent
 
 var bcip = "127.0.0.1"
 
-var kp = map[string]string{}
-
 var cfg conf.Config
 
 var flag_prefix = flag.String("prefix", "", "the prefix folder path")
