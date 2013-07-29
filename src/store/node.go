@@ -3,6 +3,7 @@ package store
 import (
     "encoding/json"
     //"fmt"
+    "regexp"
     "strconv"
     "strings"
 )
@@ -72,7 +73,7 @@ func join(parts []string, p string) string {
 func (this *Store) NodeSet(pl *NodeProposal) uint16 {
 
     // Saving File
-    in := strings.Trim(pl.Key, "/")
+    in := nodePathFilter(pl.Key)
     p := split(in, "/")
     l := len(p)
     if pl.Val == NodeDelFlag {
@@ -103,7 +104,7 @@ func (this *Store) NodeSet(pl *NodeProposal) uint16 {
 
 func (this *Store) NodeGet(path string) (*Node, error) {
 
-    in := strings.Trim(path, "/")
+    in := nodePathFilter(path)
 
     item, e := this.Hgetall(INodeFile + in)
     if e != nil {
@@ -132,7 +133,7 @@ func (this *Store) NodeGets(keys string) (string, error) {
 
     for _, path := range ks {
 
-        in := strings.Trim(path, "/")
+        in := nodePathFilter(path)
 
         item, e := this.Hgetall(INodeFile + in)
         if e != nil {
@@ -163,7 +164,7 @@ func (this *Store) NodeGets(keys string) (string, error) {
 
 func (this *Store) NodeList(path string) (string, error) {
 
-    in := strings.Trim(path, "/")
+    in := nodePathFilter(path)
 
     item, e := this.Smembers(INodeDir + in)
     if e != nil {
@@ -189,4 +190,11 @@ func (this *Store) NodeList(path string) (string, error) {
         return string(rs), nil
     }
     return "", nil
+}
+
+func nodePathFilter(path string) string {
+
+    reg, _ := regexp.Compile("/+")
+
+    return strings.Trim(reg.ReplaceAllString(path, "/"), "/")
 }

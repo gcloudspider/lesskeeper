@@ -2,7 +2,6 @@ package store
 
 import (
     "encoding/json"
-    "strings"
 )
 
 const (
@@ -13,7 +12,7 @@ const (
 func (this *Store) LocalNodeSet(pl *NodeProposal) uint16 {
 
     // Saving File
-    in := strings.Trim(pl.Key, "/")
+    in := nodePathFilter(pl.Key)
     p := split(in, "/")
     l := len(p)
     if pl.Val == NodeDelFlag {
@@ -45,7 +44,7 @@ func (this *Store) LocalNodeSet(pl *NodeProposal) uint16 {
 
 func (this *Store) LocalNodeGet(path string) (*Node, error) {
 
-    in := strings.Trim(path, "/")
+    in := nodePathFilter(path)
 
     v, e := this.Get(ILocalNodeFile + in)
     if e != nil {
@@ -60,7 +59,7 @@ func (this *Store) LocalNodeGet(path string) (*Node, error) {
 
 func (this *Store) LocalNodeList(path string) (string, error) {
 
-    in := strings.Trim(path, "/")
+    in := nodePathFilter(path)
 
     item, e := this.Smembers(ILocalNodeDir + in)
     if e != nil {
