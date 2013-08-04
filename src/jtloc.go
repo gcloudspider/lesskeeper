@@ -146,12 +146,14 @@ func jobTrackerLocalRefresh() {
     kprSef.Port = cfg.KeeperPort
 
     ms, _ := stor.Hgetall("ctl:members")
+
+LoopKprGrp:
     for k, _ := range kprGrp {
 
         for _, v2 := range ms {
 
             if k == v2 {
-                break
+                break LoopKprGrp
             }
         }
 
@@ -192,7 +194,6 @@ func jobTrackerLocalRefresh() {
 
     // Every Keeper Instance, Default as Single-Node Type
     if len(kprGrp) == 0 {
-
         stor.Hset("ctl:members", "1", kprSef.Id)
     }
 }

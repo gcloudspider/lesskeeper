@@ -4,7 +4,6 @@ import (
     "../deps/lessgo/utils"
     "./peer"
     "./store"
-    "strings"
     "sync"
     "time"
 )
@@ -68,7 +67,6 @@ type WatcherQueue struct {
 */
 
 func (p *Proposer) Cmd(rq *Request, rp *Reply) error {
-
     switch string(rq.Method) {
     case "GET":
         CmdGet(rq, rp)
@@ -83,7 +81,6 @@ func (p *Proposer) Cmd(rq *Request, rp *Reply) error {
     case "KPRMEMSET":
         CmdKprMemSet(rq, rp)
     }
-
     return nil
 }
 
@@ -151,7 +148,7 @@ func CmdSet(rq *Request, rp *Reply, del bool) {
         rqbody.Val = store.NodeDelFlag
     }
 
-    nodeEvent := store.EventNone
+    //nodeEvent := store.EventNone
 
     node, _ := stor.NodeGet(rqbody.Path)
     if node.R > 0 {
@@ -160,9 +157,9 @@ func CmdSet(rq *Request, rp *Reply, del bool) {
             rp.Type = peer.ReplyOK
             return
         }
-        nodeEvent = store.EventNodeDataChanged
+        //nodeEvent = store.EventNodeDataChanged
     } else {
-        nodeEvent = store.EventNodeCreated
+        //nodeEvent = store.EventNodeCreated
     }
 
     n, _ := stor.Incrby("ctl:ltid", 1)
@@ -180,23 +177,19 @@ func CmdSet(rq *Request, rp *Reply, del bool) {
 
     proposals[verset] = pl
 
-    promised := make(chan uint8, len(kprGrp))
-    go func() {
-        time.Sleep(30e9)
-        promised <- 9
-    }()
+    var promised = make(chan uint8, len(kprGrp)*2+2)
 
     // Acceptor.Prepare
     for _, v := range kprGrp {
 
-        go func() {
+        go func(promised chan uint8, pl *store.NodeProposal, ip string) {
 
             call := peer.NewNetCall()
 
             call.Method = "Acceptor.Prepare"
             call.Args = pl
             call.Reply = new(ProposalPromise)
-            call.Addr = v.Addr + ":" + cfg.KeeperPort
+            call.Addr = ip + ":" + cfg.KeeperPort
 
             prkp.Call(call)
 
@@ -208,21 +201,23 @@ func CmdSet(rq *Request, rp *Reply, del bool) {
             } else {
                 promised <- 0
             }
-        }()
+            //fmt.Println("call     3")
+        }(promised, pl, v.Addr)
     }
 
     valued := 0
     unvalued := 0
 
-L:
+WaitPromise:
     for {
         select {
         case s := <-promised:
+            //fmt.Println("get          ", s)
             if s == 1 {
                 valued++
                 if 2*valued > len(kprGrp) {
                     //fmt.Println("Valued")
-                    break L
+                    break WaitPromise
                 }
             } else if s == 0 {
                 unvalued++
@@ -235,26 +230,26 @@ L:
                 rp.Type = peer.ReplyError
                 return
             }
+
+        case <-time.After(time.Second * 15):
+            rp.Type = peer.ReplyError
+            return
         }
     }
 
     // Acceptor.Accept
-    accepted := make(chan uint8, len(kprGrp))
-    go func() {
-        time.Sleep(30e9)
-        accepted <- 9
-    }()
+    var accepted = make(chan uint8, len(kprGrp)*2+2)
 
     for _, v := range kprGrp {
 
-        go func() {
+        go func(accepted chan uint8, pl *store.NodeProposal, ip string) {
 
             call := peer.NewNetCall()
 
             call.Method = "Acceptor.Accept"
             call.Args = pl
             call.Reply = new(Reply)
-            call.Addr = v.Addr + ":" + cfg.KeeperPort
+            call.Addr = ip + ":" + cfg.KeeperPort
 
             prkp.Call(call)
 
@@ -268,13 +263,13 @@ L:
             } else {
                 accepted <- 0
             }
-        }()
+        }(accepted, pl, v.Addr)
     }
 
     valued = 0
     unvalued = 0
 
-A:
+WaitAccept:
     for {
         select {
         case s := <-accepted:
@@ -282,8 +277,8 @@ A:
                 valued++
                 if 2*valued > len(kprGrp) {
                     rp.Type = peer.ReplyOK
-                    watchmq <- &WatcherQueue{strings.Trim(rqbody.Path, "/"), nodeEvent, 0}
-                    break A
+                    //watchmq <- &WatcherQueue{strings.Trim(rqbody.Path, "/"), nodeEvent, 0}
+                    break WaitAccept
                 }
             } else if s == 0 {
                 unvalued++
@@ -294,10 +289,16 @@ A:
                 }
             } else {
                 rp.Type = peer.ReplyError
+                rp.Body = "UnValued"
                 return
             }
+        case <-time.After(time.Second * 15):
+            rp.Type = peer.ReplyError
+            rp.Body = "UnValued"
+            return
         }
     }
+
 }
 
 func CmdKprMemSet(rq *Request, rp *Reply) {

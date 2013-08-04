@@ -157,8 +157,8 @@ type NetCall struct {
 func NewNetCall() *NetCall {
 
     c := new(NetCall)
-    c.Status = make(chan uint8, 2)
-    c.Timeout = 30e9
+    c.Status = make(chan uint8, 4)
+    c.Timeout = 20e9
 
     return c
 }
@@ -167,7 +167,7 @@ func NewTCPInstance() *NetTCP {
 
     this := new(NetTCP)
 
-    this.out = make(chan *NetCall, 100000)
+    this.out = make(chan *NetCall, 30000)
 
     this.poolsize = 10
     this.pool = make(chan *rpc.Client, this.poolsize)
@@ -220,6 +220,12 @@ func (this *NetTCP) sending() {
                 p.Status <- 1
             case <-time.After(p.Timeout):
                 p.Status <- 9
+            }
+
+            if rs.Error != nil {
+                this.pool <- nil
+                this.out <- p
+                return
             }
 
             this.pool <- conn
