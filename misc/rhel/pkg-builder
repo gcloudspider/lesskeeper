@@ -19,6 +19,7 @@ $cmd = "
 killall lesskeeper-store\n
 cd $basedir/deps/redis\n
 make\n
+cp -rp ./src/redis-cli $basedir/bin/lesskeeper-cli 
 cp -rp ./src/redis-server $basedir/bin/lesskeeper-store ";
 
 shell_exec($cmd);
@@ -42,6 +43,7 @@ mkdir -p /tmp/SOURCES/{$pkgname}-{$ver}/etc
 
 
 cp -rp $basedir/bin/lesskeeper /tmp/SOURCES/{$pkgname}-{$ver}/bin/
+cp -rp $basedir/bin/lesskeeper-cli /tmp/SOURCES/{$pkgname}-{$ver}/bin/
 cp -rp $basedir/bin/lesskeeper-store /tmp/SOURCES/{$pkgname}-{$ver}/bin/
 
 cp -rp $basedir/misc/keeper/keeper.json /tmp/SOURCES/{$pkgname}-{$ver}/etc/keeper.json

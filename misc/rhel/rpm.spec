@@ -27,6 +27,7 @@ install -d %{buildroot}%{app_home}/bin
 install -d %{buildroot}%{app_home}/etc
 install -d %{buildroot}%{_initrddir}
 
+install -m 0755 -p bin/lesskeeper-cli %{buildroot}%{app_home}/bin/lesskeeper-cli
 install -m 0755 -p bin/lesskeeper-store %{buildroot}%{app_home}/bin/lesskeeper-store
 install -m 0755 -p bin/lesskeeper %{buildroot}%{app_home}/bin/lesskeeper
 cp -rp etc/keeper.json %{buildroot}%{app_home}/etc/keeper.json
