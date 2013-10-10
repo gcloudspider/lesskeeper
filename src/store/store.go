@@ -91,6 +91,14 @@ func (this *Store) Hset(key string, hkey string, hval string) error {
     return nil
 }
 
+func (this *Store) Hsetnx(key string, hkey string, hval string) error {
+    r := this.c.Hsetnx(key, hkey, hval)
+    if r.Err != nil {
+        return r.Err
+    }
+    return nil
+}
+
 func (this *Store) Hdel(key string, hkey string) error {
     r := this.c.Hdel(key, hkey)
     if r.Err != nil {

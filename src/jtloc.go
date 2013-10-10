@@ -118,9 +118,15 @@ func jobTrackerLocalRefresh() {
 
     // if new node then ID setting
     if id, ok := loc["node"]; !ok {
+
         kprSef.Id = utils.StringNewRand(10)
-        stor.Hset("ctl:loc", "node", kprSef.Id)
-    } else {
+
+        e := stor.Hsetnx("ctl:loc", "node", kprSef.Id)
+        if e != nil {
+            return
+        }
+
+    } else if kprSef.Id != id {
         kprSef.Id = id
     }
 
